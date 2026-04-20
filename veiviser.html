@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Veiviseren – KI i klasserommet</title>
+<link rel="stylesheet" href="style.css">
+<style>
+body { display: flex; align-items: flex-start; justify-content: center; padding: 1.5rem 1rem 3rem; }
+.wiz-container { max-width: 680px; margin: 0 auto; }
+</style>
+</head>
+<body>
+<a href="#main-content" class="sr-only" style="position:absolute;top:12px;left:12px;background:var(--blue);color:#fff;padding:8px 16px;border-radius:8px;font-weight:700;font-size:13px;text-decoration:none;z-index:9999;transform:translateY(-200%);transition:transform .15s">Hopp til innhold</a>
+
+<div class="app" role="application">
+
+  <div class="topbar" role="banner">
+    <a href="index.html" class="tb-logo">KI<em> i klasserommet</em></a>
+    <nav class="tb-nav" role="navigation" aria-label="Hovednavigasjon">
+      <a href="index.html">Kurskartet</a>
+      <a href="veiviser.html" class="active" aria-current="page">Veiviseren</a>
+      <a href="min-bank.html">Min bank</a>
+      <a href="kompasset.html">Kompasset</a>
+      <a href="min-bank.html">Min bank</a>
+    </nav>
+    <div class="tb-right">
+      <a href="min-bank.html" class="tb-btn bank" id="bank-btn" aria-label="Min prompt-bank">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="10" height="8" rx="1.5"/><path d="M4 3V2a2 2 0 014 0v1"/></svg>
+        Min bank
+        <span class="bank-badge" id="bank-badge" style="display:none">0</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="page-body" id="main-content" role="main">
+    <div class="wiz-container">
+
+      <div id="lock-notice" style="display:none;background:var(--amber-bg);border:1px solid #f0d070;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1.5rem;display:flex;gap:.75rem;align-items:flex-start">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="var(--amber-hi)" stroke-width="2" style="flex-shrink:0;margin-top:1px"><rect x="4" y="8" width="10" height="8" rx="2"/><path d="M6 8V5.5a3 3 0 016 0V8"/></svg>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--amber);margin-bottom:.2rem">Veiviseren er tilgjengelig</div>
+          <div style="font-size:12px;color:#7a5010;line-height:1.5">Du kan bruke veiviseren direkte her. For å låse den opp inne i øykartet må du fullføre 3 kort på Undervisning-øya. <a href="index.html" style="color:var(--amber);font-weight:600">Gå til kurskartet →</a></div>
+        </div>
+      </div>
+
+      <h1 class="page-title">Lag undervisningsopplegg</h1>
+      <p class="page-sub">Basert på kompetansemål fra Udir — klar for Microsoft Copilot</p>
+
+      <!-- STEP INDICATOR -->
+      <nav class="wiz-steps" aria-label="Steg i veiviseren" id="wiz-steps-nav">
+        <div class="wiz-step on" id="ws-0"><div class="wiz-step-dot">1</div><span class="wiz-step-lbl">Fag & trinn</span></div>
+        <div class="wiz-conn" id="wc-0"></div>
+        <div class="wiz-step" id="ws-1"><div class="wiz-step-dot">2</div><span class="wiz-step-lbl">Kompetansemål</span></div>
+        <div class="wiz-conn" id="wc-1"></div>
+        <div class="wiz-step" id="ws-2"><div class="wiz-step-dot">3</div><span class="wiz-step-lbl">Opplegg</span></div>
+        <div class="wiz-conn" id="wc-2"></div>
+        <div class="wiz-step" id="ws-3"><div class="wiz-step-dot">4</div><span class="wiz-step-lbl">Prompt klar</span></div>
+      </nav>
+
+      <!-- STEP 0: FAG & TRINN -->
+      <div class="wiz-screen on" id="wiz-0">
+        <div class="wiz-card">
+          <div class="wiz-card-head">
+            <div class="wiz-card-title">Velg fag og trinn</div>
+            <div class="wiz-card-sub">Vi tilpasser kompetansemål-forslagene og Udir-lenken til fagkoden din.</div>
+          </div>
+          <div class="wiz-card-body">
+            <div class="field-row">
+              <div class="field" id="f-fag">
+                <label for="w-fag">Fag <span aria-hidden="true" style="color:var(--red)">*</span></label>
+                <select id="w-fag" aria-required="true" aria-describedby="err-fag" onchange="onFagChange()">
+                  <option value="">Velg fag…</option>
+                </select>
+                <span class="err-msg" id="err-fag" role="alert"><span aria-hidden="true">!</span> Velg et fag</span>
+              </div>
+              <div class="field" id="f-trinn">
+                <label for="w-trinn">Trinn <span aria-hidden="true" style="color:var(--red)">*</span></label>
+                <select id="w-trinn" aria-required="true" aria-describedby="err-trinn">
+                  <option value="">Velg trinn…</option>
+                </select>
+                <span class="err-msg" id="err-trinn" role="alert"><span aria-hidden="true">!</span> Velg et trinn</span>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field" id="f-tema">
+                <label for="w-tema">Tema <span aria-hidden="true" style="color:var(--red)">*</span></label>
+                <input type="text" id="w-tema" placeholder="f.eks. Romantikken, Andregradsfunksjoner…" aria-required="true" aria-describedby="err-tema">
+                <span class="err-msg" id="err-tema" role="alert"><span aria-hidden="true">!</span> Skriv inn et tema</span>
+              </div>
+              <div class="field">
+                <label for="w-tid">Tidsramme</label>
+                <select id="w-tid">
+                  <option value="45 minutter">45 min (1 økt)</option>
+                  <option value="90 minutter" selected>90 min (2 økter)</option>
+                  <option value="en hel dag">Heldagsopplegg</option>
+                  <option value="en uke">Ukesopplegg</option>
+                </select>
+              </div>
+            </div>
+            <div class="udir-row" id="udir-row-0" aria-live="polite">
+              <div class="udir-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2L2 5v9h12V5L8 2z"/><path d="M6 14V9h4v5"/></svg></div>
+              <div class="udir-text" id="udir-text-0">Velg et fag for å se lenke til kompetansemål på Udir.</div>
+              <a id="udir-link-0" href="https://www.udir.no/lk20/" target="_blank" rel="noopener" class="udir-link" aria-label="Åpne Udir i ny fane">Åpne Udir</a>
+            </div>
+          </div>
+        </div>
+        <div class="wiz-nav">
+          <span></span>
+          <button class="btn primary" onclick="goStep(1)">Neste: Kompetansemål →</button>
+        </div>
+      </div>
+
+      <!-- STEP 1: KOMPETANSEMÅL -->
+      <div class="wiz-screen" id="wiz-1">
+        <div class="wiz-card">
+          <div class="wiz-card-head">
+            <div class="wiz-card-title">Kompetansemål</div>
+            <div class="wiz-card-sub">Velg et forslag, eller lim inn nøyaktig tekst fra Udir.</div>
+          </div>
+          <div class="wiz-card-body">
+            <div>
+              <div class="section-lbl">Forslag fra data.js</div>
+              <div class="km-tabs" id="km-tabs" role="group" aria-label="Velg kompetansemål-forslag"></div>
+            </div>
+            <div class="field" id="f-km">
+              <label for="w-km">Kompetansemålet som brukes <span aria-hidden="true" style="color:var(--red)">*</span></label>
+              <p class="hint">Kopier nøyaktig tekst fra udir.no og lim inn her — eller velg et forslag over.</p>
+              <textarea id="w-km" rows="4" placeholder="Lim inn kompetansemål her…" aria-required="true" aria-describedby="err-km"></textarea>
+              <span class="err-msg" id="err-km" role="alert"><span aria-hidden="true">!</span> Lim inn et kompetansemål</span>
+            </div>
+            <div class="udir-row" id="udir-row-1">
+              <div class="udir-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2L2 5v9h12V5L8 2z"/><path d="M6 14V9h4v5"/></svg></div>
+              <div class="udir-text">Finn nøyaktig kompetansemål for ditt fag og trinn på udir.no</div>
+              <a id="udir-link-1" href="https://www.udir.no/lk20/" target="_blank" rel="noopener" class="udir-link">Åpne Udir</a>
+            </div>
+          </div>
+        </div>
+        <div class="wiz-nav">
+          <button class="btn ghost" onclick="goStep(0)">← Tilbake</button>
+          <button class="btn primary" onclick="goStep(2)">Neste: Opplegg →</button>
+        </div>
+      </div>
+
+      <!-- STEP 2: OPPLEGG-VALG -->
+      <div class="wiz-screen" id="wiz-2">
+        <div class="wiz-card">
+          <div class="wiz-card-head">
+            <div class="wiz-card-title">Hva vil du lage?</div>
+            <div class="wiz-card-sub">Vi bygger en ferdig Copilot-prompt basert på valgene dine.</div>
+          </div>
+          <div class="wiz-card-body">
+            <div class="field-row">
+              <div class="field">
+                <label for="w-type">Type opplegg</label>
+                <select id="w-type">
+                  <option value="undervisningsopplegg">Undervisningsopplegg</option>
+                  <option value="læringsaktivitet">Læringsaktivitet (én økt)</option>
+                  <option value="vurderingsopplegg">Vurderingsopplegg</option>
+                  <option value="differensiert opplegg">Differensiert opplegg</option>
+                  <option value="prosjektoppgave">Prosjektoppgave</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="w-vurd">Vurderingsform</label>
+                <select id="w-vurd">
+                  <option value="underveisvurdering">Underveisvurdering</option>
+                  <option value="sluttvurdering">Sluttvurdering</option>
+                  <option value="egenvurdering">Egenvurdering</option>
+                  <option value="kameratvurdering">Kameratvurdering</option>
+                  <option value="ingen vurdering">Ingen vurdering</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="w-kontekst">Kontekst om klassen (valgfritt)</label>
+              <p class="hint">f.eks. "28 elever med stor spredning", "skal ha fremlegg", "fjernundervisning"</p>
+              <textarea id="w-kontekst" rows="2" placeholder="Legg til kontekst som er nyttig for KI…"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="wiz-nav">
+          <button class="btn ghost" onclick="goStep(1)">← Tilbake</button>
+          <button class="btn primary" onclick="buildPrompt()">Generer prompt →</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: RESULTAT -->
+      <div class="wiz-screen" id="wiz-3">
+        <div class="wiz-card">
+          <div class="wiz-card-head">
+            <div class="wiz-card-title">Prompten din er klar</div>
+            <div class="wiz-card-sub">Kopier til utklippstavlen og åpne Copilot — lim inn og trykk Enter.</div>
+          </div>
+          <div class="wiz-card-body">
+            <div class="prompt-result-box">
+              <div class="prb-head">
+                <span class="prb-lbl">Ferdig Copilot-prompt</span>
+                <div class="prb-actions">
+                  <button class="copy-btn" id="final-copy" onclick="copyFinal()" aria-label="Kopiér prompt">Kopiér</button>
+                </div>
+              </div>
+              <div class="prb-text" id="final-prompt" role="textbox" aria-readonly="true" aria-multiline="true" tabindex="0"></div>
+            </div>
+
+            <!-- COPILOT CTA -->
+            <div style="background:#e8f2fc;border:1.5px solid #b8d4f0;border-radius:14px;padding:1.125rem;display:flex;align-items:flex-start;gap:1rem;flex-wrap:wrap;margin-top:1rem">
+              <div style="width:42px;height:42px;border-radius:10px;background:#0078d4;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="white"><circle cx="11" cy="11" r="9"/><path d="M8 11h6M11 8v6" fill="none" stroke="white" stroke-width="1.8"/></svg>
+              </div>
+              <div style="flex:1;min-width:160px">
+                <div style="font-size:13px;font-weight:700;color:#0a3060;margin-bottom:.25rem">Klar til bruk i Microsoft Copilot</div>
+                <div style="font-size:12px;color:#305090;line-height:1.5;margin-bottom:.625rem">
+                  1. Klikk «Kopiér» over &nbsp;·&nbsp;
+                  2. Klikk «Åpne Copilot» &nbsp;·&nbsp;
+                  3. Lim inn med <kbd style="font-size:10px;background:#e0eaf8;padding:1px 5px;border-radius:3px;font-family:monospace">Ctrl+V</kbd>
+                </div>
+                <button class="copilot-btn" style="padding:8px 16px;font-size:12px" onclick="openCopilotFinal()" aria-label="Kopier og åpne Microsoft Copilot i ny fane">
+                  <svg viewBox="0 0 11 11"><path d="M8 1H10V3"/><path d="M5.5 5.5L10 1"/><path d="M5 2H2a1 1 0 00-1 1v6a1 1 0 001 1h6a1 1 0 001-1V6"/></svg>
+                  Åpne Copilot
+                </button>
+              </div>
+            </div>
+
+            <!-- SAVE OPTIONS -->
+            <div style="border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:1rem">
+              <div style="padding:.625rem 1rem;background:var(--s2);border-bottom:1px solid var(--line);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--ink3)">Lagre prompten</div>
+              <div style="padding:.875rem 1rem;display:flex;flex-direction:column;gap:.75rem">
+                <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+                  <button class="btn" onclick="openSaveModal()" aria-label="Lagre i Min bank">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="3" width="11" height="9" rx="1.5"/><path d="M4 3V2a2.5 2.5 0 015 0v1"/></svg>
+                    Lagre i Min bank
+                  </button>
+                  <button class="btn" onclick="downloadTxt()" aria-label="Last ned som .txt-fil">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6.5 1v8M3.5 6l3 3 3-3"/><path d="M1 10v1a1 1 0 001 1h9a1 1 0 001-1v-1"/></svg>
+                    Last ned .txt
+                  </button>
+                </div>
+                <div class="cache-warning">
+                  <div class="cw-icon"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5M8 11v.5"/></svg></div>
+                  <div class="cw-body">
+                    <div class="cw-title">«Min bank» lagres kun i denne nettleseren</div>
+                    <div class="cw-text">Banken bruker nettleserens cache (localStorage) og er <strong>ikke lagret på server</strong>. Tømmer du cache, bytter nettleser eller bruker en annen PC, vil promptene forsvinne. Last alltid ned en .txt-kopi for sikker langtidslagring — den kan du legge i OneDrive eller en Teams-kanal.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="wiz-nav">
+          <button class="btn ghost" onclick="goStep(2)">← Endre</button>
+          <button class="btn" onclick="startOver()">Lag nytt opplegg</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer role="contentinfo">
+    <div class="footer-note">KI i klasserommet &mdash; <a href="index.html">Tilbake til kurskartet</a></div>
+    <div class="footer-links"><a href="min-bank.html">Min bank</a></div>
+  </footer>
+</div>
+
+<!-- SAVE MODAL -->
+<div class="modal-backdrop" id="save-modal" role="dialog" aria-modal="true" aria-labelledby="sm-title">
+  <div class="modal">
+    <button class="modal-close" onclick="closeSaveModal()" aria-label="Lukk">×</button>
+    <div class="modal-title" id="sm-title">Lagre prompt i Min bank</div>
+    <div class="field" style="margin-bottom:.75rem">
+      <label for="save-name">Gi prompten et navn</label>
+      <input type="text" id="save-name" placeholder="f.eks. Norsk Vg2 – romantikken"
+             onkeydown="if(event.key==='Enter')confirmSave()">
+    </div>
+    <div class="cache-warning">
+      <div class="cw-icon"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5M8 11v.5"/></svg></div>
+      <div class="cw-body">
+        <div class="cw-title">Lagres kun i denne nettleseren</div>
+        <div class="cw-text">«Min bank» bruker nettleserens cache og er ikke lagret på server. Tøm aldri cache uten å laste ned en .txt-kopi først.</div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn primary" onclick="confirmSave()">Lagre i Min bank</button>
+      <button class="btn ghost" onclick="closeSaveModal()">Avbryt</button>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+let currentStep = 0;
+
+function init() {
+  const fagSel = document.getElementById('w-fag');
+  FAG_GRUPPER.forEach(gruppe => {
+    const keys = Object.keys(FAG).filter(k => FAG[k].gruppe === gruppe);
+    if (!keys.length) return;
+    const grp = document.createElement('optgroup');
+    grp.label = gruppe;
+    keys.forEach(k => {
+      const opt = document.createElement('option');
+      opt.value = k;
+      opt.textContent = FAG[k].navn + ' (' + FAG[k].kode + ')';
+      grp.appendChild(opt);
+    });
+    fagSel.appendChild(grp);
+  });
+  // Populate trinn select
+  const trinnSel = document.getElementById('w-trinn');
+  TRINN.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t; opt.textContent = t;
+    trinnSel.appendChild(opt);
+  });
+  updateBankBadge();
+}
+
+function onFagChange() {
+  const k = document.getElementById('w-fag').value;
+  const f = FAG[k];
+  const url0 = document.getElementById('udir-link-0');
+  const txt0 = document.getElementById('udir-text-0');
+  const url1 = document.getElementById('udir-link-1');
+  if (f) {
+    url0.href = f.udir; url1.href = f.udir;
+    txt0.textContent = `Se kompetansemål for ${f.navn} (${f.kode}) på Udir.`;
+  } else {
+    url0.href = 'https://www.udir.no/lk20/';
+    txt0.textContent = 'Velg et fag for å se lenke til kompetansemål på Udir.';
+  }
+}
+
+function goStep(n) {
+  // Validate current step before moving forward
+  if (n > currentStep) {
+    if (currentStep === 0 && !validateStep0()) return;
+    if (currentStep === 1 && !validateStep1()) return;
+  }
+
+  document.querySelectorAll('.wiz-screen').forEach((s, i) => s.classList.toggle('on', i === n));
+  document.querySelectorAll('.wiz-step').forEach((s, i) => {
+    s.classList.remove('on', 'done');
+    if (i < n) s.classList.add('done');
+    else if (i === n) s.classList.add('on');
+  });
+  document.querySelectorAll('.wiz-conn').forEach((c, i) => c.classList.toggle('done', i < n));
+  currentStep = n;
+
+  if (n === 1) buildKmTabs();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function validateStep0() {
+  let ok = true;
+  const checks = [['w-fag','f-fag','err-fag'], ['w-trinn','f-trinn','err-trinn'], ['w-tema','f-tema','err-tema']];
+  checks.forEach(([inpId, fieldId, errId]) => {
+    const val = document.getElementById(inpId).value.trim();
+    document.getElementById(fieldId).classList.toggle('error', !val);
+    if (!val) ok = false;
+  });
+  if (!ok) document.getElementById('w-fag').focus();
+  return ok;
+}
+function validateStep1() {
+  const val = document.getElementById('w-km').value.trim();
+  document.getElementById('f-km').classList.toggle('error', !val);
+  if (!val) { document.getElementById('w-km').focus(); return false; }
+  return true;
+}
+
+function buildKmTabs() {
+  const k = document.getElementById('w-fag').value;
+  const f = FAG[k];
+  const container = document.getElementById('km-tabs');
+  document.getElementById('udir-link-1').href = f ? f.udir : 'https://www.udir.no/lk20/';
+  if (!f) { container.innerHTML = '<span style="font-size:12px;color:var(--ink3)">Velg fag i forrige steg for å se forslag.</span>'; return; }
+  container.innerHTML = f.kompetansemaal.map((km, i) =>
+    `<button class="km-tab${i === 0 ? ' on' : ''}" onclick="selectKm(this,'${encodeURIComponent(km)}')" aria-pressed="${i === 0}">Mål ${i + 1}</button>`
+  ).join('');
+  document.getElementById('w-km').value = f.kompetansemaal[0] || '';
+}
+function selectKm(btn, encoded) {
+  document.querySelectorAll('.km-tab').forEach(t => { t.classList.remove('on'); t.setAttribute('aria-pressed', 'false'); });
+  btn.classList.add('on'); btn.setAttribute('aria-pressed', 'true');
+  document.getElementById('w-km').value = decodeURIComponent(encoded);
+}
+
+function buildPrompt() {
+  if (!validateStep1()) { goStep(1); return; }
+  const fk = document.getElementById('w-fag').value;
+  const fagnavn = FAG[fk] ? FAG[fk].navn : document.getElementById('w-fag').options[document.getElementById('w-fag').selectedIndex]?.text || '[fag]';
+  const trinn = document.getElementById('w-trinn').value || 'Vg1';
+  const tema = document.getElementById('w-tema').value.trim();
+  const tid = document.getElementById('w-tid').value;
+  const km = document.getElementById('w-km').value.trim();
+  const type = document.getElementById('w-type').value;
+  const vurd = document.getElementById('w-vurd').value;
+  const kontekst = document.getElementById('w-kontekst').value.trim();
+
+  const prompt = `Du er en erfaren lærer i ${fagnavn} i videregående skole og kjenner Kunnskapsløftet godt.
+
+Lag et ${type} for ${trinn} i ${fagnavn} om temaet «${tema}».
+
+Kompetansemål (Udir – ${FAG[fk]?.kode || fk}):
+«${km}»
+
+Rammer:
+- Tidsbruk: ${tid}
+- Vurderingsform: ${vurd}${kontekst ? '\n- Kontekst: ' + kontekst : ''}
+
+Opplegget skal inneholde:
+1. Læringsmål formulert for elevene (maks 2 setninger)
+2. Innledning som aktiverer forkunnskaper (ca. 5 min)
+3. Hoveddel med konkrete aktiviteter og arbeidsformer
+4. Avslutning med oppsummering og refleksjon
+5. Tilpasningstips for elever med ulike faglige nivåer
+
+Skriv konkret og handlingsorientert. Læreren vurderer selv hva som passer for sin klasse.`;
+
+  document.getElementById('final-prompt').textContent = prompt;
+  goStep(3);
+}
+
+function copyFinal() {
+  const t = document.getElementById('final-prompt').textContent;
+  const b = document.getElementById('final-copy');
+  navigator.clipboard.writeText(t).then(() => {
+    b.textContent = 'Kopiert!'; b.classList.add('ok');
+    setTimeout(() => { b.textContent = 'Kopiér'; b.classList.remove('ok'); }, 2400);
+  }).catch(() => {
+    const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    b.textContent = 'Kopiert!'; b.classList.add('ok');
+    setTimeout(() => { b.textContent = 'Kopiér'; b.classList.remove('ok'); }, 2400);
+  });
+}
+function openCopilotFinal() {
+  const t = document.getElementById('final-prompt').textContent;
+  navigator.clipboard.writeText(t).catch(() => {});
+  window.open(CONFIG.copilotUrl, '_blank', 'noopener');
+}
+function downloadTxt() {
+  const t = document.getElementById('final-prompt').textContent;
+  const fag = document.getElementById('w-fag').value.toLowerCase();
+  const tema = document.getElementById('w-tema').value.replace(/\s+/g, '-').toLowerCase().substring(0, 30);
+  const dato = new Date().toISOString().slice(0, 10);
+  const blob = new Blob([t], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `ki-prompt-${fag}-${tema}-${dato}.txt`; a.click();
+  URL.revokeObjectURL(url);
+}
+function openSaveModal() {
+  const fag = document.getElementById('w-fag').value;
+  const tema = document.getElementById('w-tema').value;
+  const trinn = document.getElementById('w-trinn').value;
+  document.getElementById('save-name').value = `${FAG[fag]?.navn || fag} ${trinn} – ${tema}`;
+  document.getElementById('save-modal').classList.add('open');
+  setTimeout(() => document.getElementById('save-name').focus(), 50);
+}
+function closeSaveModal() { document.getElementById('save-modal').classList.remove('open'); }
+function confirmSave() {
+  const name = document.getElementById('save-name').value.trim();
+  if (!name) { document.getElementById('save-name').focus(); return; }
+  const t = document.getElementById('final-prompt').textContent;
+  const bank = JSON.parse(localStorage.getItem('ki-bank') || '[]');
+  bank.unshift({ id: Date.now(), name, prompt: t, dato: new Date().toLocaleDateString('no-NO'), fag: document.getElementById('w-fag').value, trinn: document.getElementById('w-trinn').value });
+  localStorage.setItem('ki-bank', JSON.stringify(bank));
+  updateBankBadge();
+  closeSaveModal();
+  showToast('Lagret i Min bank!');
+}
+function updateBankBadge() {
+  const bank = JSON.parse(localStorage.getItem('ki-bank') || '[]');
+  const badge = document.getElementById('bank-badge');
+  if (bank.length > 0) { badge.textContent = bank.length; badge.style.display = 'flex'; }
+  else badge.style.display = 'none';
+}
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.15)';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+function startOver() {
+  ['w-fag','w-trinn','w-tid','w-km','w-type','w-vurd','w-kontekst'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = '';
+  });
+  document.getElementById('w-tema').value = '';
+  document.getElementById('final-prompt').textContent = '';
+  goStep(0);
+}
+document.getElementById('save-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeSaveModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('save-modal').classList.contains('open')) closeSaveModal(); });
+
+init();
+</script>
+</body>
+</html>

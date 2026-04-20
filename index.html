@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>KI i klasserommet</title>
+<link rel="stylesheet" href="style.css">
+<style>
+/* Page-specific styles for island map */
+body { display: flex; align-items: flex-start; justify-content: center; padding: 1.5rem 1rem 3rem; }
+
+.main { position: relative; display: flex; height: 540px; overflow: hidden; }
+
+/* MAP */
+.map-canvas { flex: 1; background: var(--sea); overflow: hidden; }
+.map-svg { width: 100%; height: 100%; display: block; }
+.isl { cursor: pointer; transition: filter .15s; }
+.isl:hover { filter: brightness(1.09); }
+.isl:focus { outline: none; }
+.isl:focus > ellipse:first-child { stroke: var(--blue-hi); stroke-width: 3; }
+
+/* SIDE PANEL */
+.map-side { width: 260px; background: var(--surface); border-left: 1px solid var(--line); display: flex; flex-direction: column; flex-shrink: 0; }
+.ms-top { padding: 1rem 1.125rem .75rem; border-bottom: 1px solid var(--line); }
+.ms-eyebrow { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: var(--ink3); margin-bottom: .2rem; }
+.ms-title { font-size: 1rem; font-weight: 700; color: var(--ink); font-family: Georgia, serif; line-height: 1.2; }
+.ms-sub { font-size: 12px; color: var(--ink3); margin-top: .2rem; line-height: 1.4; }
+.ms-body { padding: .875rem 1.125rem; flex: 1; display: flex; flex-direction: column; gap: .875rem; overflow-y: auto; }
+.ms-fog-txt { font-size: 12px; color: var(--ink3); line-height: 1.45; }
+.ms-fog-track { height: 4px; background: var(--s3); border-radius: 2px; overflow: hidden; margin-top: .35rem; }
+.ms-fog-fill { height: 100%; background: var(--green-hi); border-radius: 2px; transition: width .6s ease; }
+.ms-hint { font-size: 11px; color: var(--ink3); line-height: 1.5; font-style: italic; }
+.ms-cta { padding: .875rem 1.125rem; border-top: 1px solid var(--line); }
+
+/* ZOOM VIEW */
+.zoom-view {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  background: var(--surface);
+  opacity: 0; pointer-events: none;
+  transform: scale(.97);
+  transition: opacity .25s, transform .25s;
+  z-index: 10;
+}
+.zoom-view.open { opacity: 1; pointer-events: auto; transform: scale(1); }
+.zv-header { display: flex; align-items: center; gap: .75rem; padding: .875rem 1.25rem; border-bottom: 1px solid var(--line); flex-shrink: 0; }
+.zv-back { display: flex; align-items: center; gap: .35rem; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--s2); color: var(--ink2); font-size: 12px; font-weight: 600; transition: all .12s; }
+.zv-back:hover { background: var(--s3); }
+.zv-back:focus { outline: none; box-shadow: var(--focus); }
+.zv-back svg { width: 12px; height: 12px; stroke: var(--ink2); stroke-width: 2.2; fill: none; }
+.zv-info { flex: 1; min-width: 0; }
+.zv-name { font-size: 1rem; font-weight: 700; color: var(--ink); font-family: Georgia, serif; line-height: 1.2; }
+.zv-sub { font-size: 11px; color: var(--ink3); }
+.zv-body { flex: 1; overflow-y: auto; padding: 1.125rem 1.25rem; }
+.zv-desc { font-size: 13px; color: var(--ink2); margin-bottom: 1rem; line-height: 1.6; max-width: 580px; }
+.cards-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: var(--ink3); margin-bottom: .625rem; }
+
+/* ADMIN */
+.admin-overlay { position: fixed; }
+</style>
+</head>
+<body>
+<a href="#main-content" class="sr-only" style="position:absolute;top:12px;left:12px;background:var(--blue);color:#fff;padding:8px 16px;border-radius:8px;font-weight:700;font-size:13px;text-decoration:none;z-index:9999;transform:translateY(-200%);transition:transform .15s">Hopp til innhold</a>
+
+<div class="app" role="application">
+
+  <!-- TOPBAR -->
+  <div class="topbar" role="banner">
+    <a href="index.html" class="tb-logo" id="logo-tap" title="Klikk 3× raskt for admin">KI<em> i klasserommet</em></a>
+    <nav class="tb-nav" role="navigation" aria-label="Hovednavigasjon">
+      <a href="index.html" class="active" aria-current="page">Kurskartet</a>
+      <a href="veiviser.html">Veiviseren</a>
+      <a href="min-bank.html">Min bank</a>
+      <a href="kompasset.html">Kompasset</a>
+    </nav>
+    <div class="tb-right">
+      <div class="tb-prog" aria-label="Fremdrift">
+        <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+        <span id="prog-txt" style="font-size:11px;color:var(--ink3)">0/6</span>
+      </div>
+      <a href="min-bank.html" class="tb-btn bank" id="bank-btn" aria-label="Min prompt-bank">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="10" height="8" rx="1.5"/><path d="M4 3V2a2 2 0 014 0v1"/></svg>
+        Min bank
+        <span class="bank-badge" id="bank-badge" style="display:none">0</span>
+      </a>
+      <button class="tb-btn" id="admin-btn" onclick="checkAdminPin()" aria-label="Åpne admin-panel">Admin</button>
+    </div>
+  </div>
+
+  <!-- MAIN MAP AREA -->
+  <div class="main" id="main-content" role="main">
+
+    <!-- MAP VIEW -->
+    <div class="map-canvas" role="region" aria-label="Øykart – klikk på en øy for å åpne kapittelet">
+      <svg class="map-svg" viewBox="0 0 480 380" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <!-- Sea + grid -->
+        <rect width="480" height="380" fill="#b8cdd8"/>
+        <path d="M0 330 Q120 322 240 330 Q360 338 480 330" stroke="#a8bec8" stroke-width="1" fill="none"/>
+        <path d="M0 356 Q120 348 240 356 Q360 364 480 356" stroke="#a8bec8" stroke-width=".6" fill="none"/>
+        <line x1="0" y1="126" x2="480" y2="126" stroke="#a8bec8" stroke-width=".3"/>
+        <line x1="0" y1="252" x2="480" y2="252" stroke="#a8bec8" stroke-width=".3"/>
+        <line x1="160" y1="0" x2="160" y2="380" stroke="#a8bec8" stroke-width=".3"/>
+        <line x1="320" y1="0" x2="320" y2="380" stroke="#a8bec8" stroke-width=".3"/>
+        <!-- Paths -->
+        <path d="M106 252 Q152 204 212 194" stroke="#4a6030" stroke-width="1.5" stroke-dasharray="5 4" fill="none"/>
+        <path d="M264 178 Q302 161 342 165" stroke="#2a4a70" stroke-width="1.5" stroke-dasharray="5 4" fill="none" opacity=".7"/>
+        <path d="M380 184 Q396 226 388 270" stroke="#b0b8c8" stroke-width="1" stroke-dasharray="4 5" fill="none"/>
+        <path d="M364 302 Q314 328 264 330" stroke="#c0c8d4" stroke-width=".8" stroke-dasharray="3 5" fill="none"/>
+        <path d="M214 330 Q172 322 134 304" stroke="#c0c8d4" stroke-width=".8" stroke-dasharray="3 5" fill="none"/>
+        <!-- Compass -->
+        <g transform="translate(444,36)">
+          <circle r="18" fill="#f0ece0" fill-opacity=".88" stroke="#c0b8a8" stroke-width=".8"/>
+          <polygon points="0,-12 2.5,-3 0,-1 -2.5,-3" fill="#b05040"/>
+          <polygon points="0,12 2.5,3 0,1 -2.5,3" fill="#8890a0"/>
+          <text y="-16" text-anchor="middle" font-size="7" font-family="Georgia,serif" fill="#602818">N</text>
+        </g>
+        <!-- Island 0: Kom i gang -->
+        <g class="isl" id="isl-g-0" onclick="selectIsland(0)" tabindex="0" role="button" aria-label="Kom i gang"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectIsland(0)}">
+          <ellipse cx="94" cy="258" rx="52" ry="26" fill="#3a5028" opacity=".18"/>
+          <ellipse id="isl-body-0" cx="92" cy="250" rx="52" ry="26" fill="#7a9850"/>
+          <ellipse id="isl-hi-0" cx="88" cy="244" rx="36" ry="17" fill="#9ab870"/>
+          <ellipse cx="128" cy="263" rx="13" ry="6" fill="#ddd8b8"/>
+          <ellipse cx="88" cy="242" rx="22" ry="10" fill="none" stroke="#5a7838" stroke-width=".7"/>
+          <circle cx="84" cy="228" r="8" fill="#4a6030"/>
+          <line x1="84" y1="236" x2="84" y2="244" stroke="#3a4c28" stroke-width="1.4"/>
+          <circle cx="99" cy="233" r="6" fill="#5a7840"/>
+          <line x1="99" y1="239" x2="99" y2="245" stroke="#3a4c28" stroke-width="1.2"/>
+          <text x="92" y="280" text-anchor="middle" font-size="10" font-family="Georgia,serif" font-weight="700" fill="#243018">Kom i gang</text>
+          <text id="isl-here-0" x="92" y="292" text-anchor="middle" font-size="8" font-family="Georgia,serif" fill="#3a5028" opacity="0">— du er her —</text>
+          <!-- done badge -->
+          <g id="isl-done-0" opacity="0">
+            <circle cx="130" cy="232" r="9" fill="#3a5028" stroke="#f0ece0" stroke-width="1.5"/>
+            <path d="M125 232 l3 3 5.5-5" stroke="#f0ece0" stroke-width="1.7" fill="none"/>
+          </g>
+        </g>
+        <!-- Island 1: Undervisning -->
+        <g class="isl" id="isl-g-1" onclick="selectIsland(1)" tabindex="0" role="button" aria-label="Undervisning"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectIsland(1)}">
+          <ellipse id="isl-pulse-1" cx="236" cy="183" rx="62" ry="29" fill="#4a78b8" opacity="0">
+            <animate attributeName="opacity" values="0;.12;0" dur="3s" repeatCount="indefinite"/>
+            <animate attributeName="rx" values="62;74;62" dur="3s" repeatCount="indefinite"/>
+            <animate attributeName="ry" values="29;37;29" dur="3s" repeatCount="indefinite"/>
+          </ellipse>
+          <ellipse cx="236" cy="184" rx="62" ry="29" fill="#3a5888" opacity=".18"/>
+          <ellipse id="isl-body-1" cx="234" cy="176" rx="62" ry="29" fill="#6888a8"/>
+          <ellipse id="isl-hi-1" cx="230" cy="170" rx="43" ry="19" fill="#88aac8"/>
+          <ellipse cx="270" cy="188" rx="15" ry="7" fill="#ddd8b8"/>
+          <ellipse cx="230" cy="168" rx="28" ry="13" fill="none" stroke="#4868a0" stroke-width=".7"/>
+          <line id="isl-flag-1" x1="228" y1="140" x2="228" y2="162" stroke="#2a4a70" stroke-width="2"/>
+          <polygon id="isl-flagp-1" points="228,140 245,147 228,154" fill="#4870a8"/>
+          <circle cx="228" cy="162" r="3.5" fill="#2a4a70"/>
+          <circle id="isl-dot-pulse-1" cx="228" cy="162" r="3.5" fill="#4870a8" opacity=".3">
+            <animate attributeName="r" values="3.5;10;3.5" dur="2.2s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values=".3;0;.3" dur="2.2s" repeatCount="indefinite"/>
+          </circle>
+          <text x="234" y="212" text-anchor="middle" font-size="11" font-family="Georgia,serif" font-weight="700" fill="#182c40">Undervisning</text>
+          <text id="isl-here-1" x="234" y="224" text-anchor="middle" font-size="8" font-family="Georgia,serif" fill="#2a4a70">— du er her —</text>
+          <!-- done badge (hidden by default, shown when complete) -->
+          <g id="isl-done-1" opacity="0">
+            <circle cx="278" cy="158" r="9" fill="#3a5028" stroke="#f0ece0" stroke-width="1.5"/>
+            <path d="M273 158 l3 3 5.5-5" stroke="#f0ece0" stroke-width="1.7" fill="none"/>
+          </g>
+        </g>
+        <!-- Island 2: Vurdering -->
+        <g class="isl" id="isl-g-2" onclick="selectIsland(2)" tabindex="0" role="button" aria-label="Vurdering"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectIsland(2)}">
+          <ellipse cx="370" cy="174" rx="46" ry="22" fill="#483870" opacity=".18"/>
+          <ellipse id="isl-body-2" cx="368" cy="166" rx="46" ry="22" fill="#8878b0"/>
+          <ellipse id="isl-hi-2" cx="364" cy="160" rx="31" ry="14" fill="#a898c8"/>
+          <ellipse cx="400" cy="179" rx="11" ry="5" fill="#ddd8b8"/>
+          <ellipse cx="364" cy="158" rx="19" ry="8" fill="none" stroke="#6858a8" stroke-width=".7"/>
+          <polygon id="isl-flag-2" points="362,136 371,156 353,156" fill="#5848a0"/>
+          <polygon points="362,136 366,145 358,145" fill="#f0ece0" opacity=".45"/>
+          <text x="368" y="198" text-anchor="middle" font-size="10" font-family="Georgia,serif" font-weight="700" fill="#201848">Vurdering</text>
+          <text id="isl-here-2" x="368" y="210" text-anchor="middle" font-size="8" font-family="Georgia,serif" fill="#483870" opacity="0">— du er her —</text>
+          <g id="isl-done-2" opacity="0">
+            <circle cx="404" cy="154" r="9" fill="#3a5028" stroke="#f0ece0" stroke-width="1.5"/>
+            <path d="M399 154 l3 3 5.5-5" stroke="#f0ece0" stroke-width="1.7" fill="none"/>
+          </g>
+        </g>
+        <!-- Island 3: Tilpasset -->
+        <g class="isl" id="isl-g-3" onclick="selectIsland(3)" tabindex="0" role="button" aria-label="Tilpasset opplæring"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectIsland(3)}">
+          <ellipse cx="382" cy="286" rx="40" ry="19" fill="#604010" opacity=".16"/>
+          <ellipse id="isl-body-3" cx="380" cy="278" rx="40" ry="19" fill="#b88030"/>
+          <ellipse id="isl-hi-3" cx="376" cy="272" rx="27" ry="12" fill="#d0a050"/>
+          <ellipse cx="408" cy="290" rx="10" ry="5" fill="#ddd8b8"/>
+          <ellipse cx="376" cy="270" rx="17" ry="7" fill="none" stroke="#907020" stroke-width=".7"/>
+          <circle cx="371" cy="254" r="6" fill="#907020"/>
+          <line x1="371" y1="260" x2="371" y2="270" stroke="#604010" stroke-width="1.4"/>
+          <text x="380" y="307" text-anchor="middle" font-size="10" font-family="Georgia,serif" font-weight="700" fill="#301808">Tilpasset</text>
+          <text id="isl-here-3" x="380" y="319" text-anchor="middle" font-size="8" font-family="Georgia,serif" fill="#604010" opacity="0">— du er her —</text>
+          <g id="isl-done-3" opacity="0">
+            <circle cx="412" cy="264" r="9" fill="#3a5028" stroke="#f0ece0" stroke-width="1.5"/>
+            <path d="M407 264 l3 3 5.5-5" stroke="#f0ece0" stroke-width="1.7" fill="none"/>
+          </g>
+        </g>
+        <!-- Island 4: Koding -->
+        <g class="isl" id="isl-g-4" onclick="selectIsland(4)" tabindex="0" role="button" aria-label="Koding og teknologi"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectIsland(4)}">
+          <ellipse cx="232" cy="326" rx="36" ry="18" fill="#602818" opacity=".16"/>
+          <ellipse id="isl-body-4" cx="230" cy="318" rx="36" ry="18" fill="#b86040"/>
+          <ellipse id="isl-hi-4" cx="226" cy="312" rx="25" ry="11" fill="#d08060"/>
+          <ellipse cx="256" cy="330" rx="9" ry="4" fill="#ddd8b8"/>
+          <ellipse cx="226" cy="310" rx="15" ry="6" fill="none" stroke="#904838" stroke-width=".7"/>
+          <line x1="224" y1="290" x2="224" y2="302" stroke="#602818" stroke-width="1.6"/>
+          <line x1="217" y1="294" x2="231" y2="290" stroke="#602818" stroke-width="1.1"/>
+          <line x1="217" y1="298" x2="231" y2="294" stroke="#602818" stroke-width="1.1"/>
+          <text x="230" y="345" text-anchor="middle" font-size="10" font-family="Georgia,serif" font-weight="700" fill="#301008">Koding</text>
+          <text id="isl-here-4" x="230" y="357" text-anchor="middle" font-size="8" font-family="Georgia,serif" fill="#602818" opacity="0">— du er her —</text>
+          <g id="isl-done-4" opacity="0">
+            <circle cx="258" cy="300" r="9" fill="#3a5028" stroke="#f0ece0" stroke-width="1.5"/>
+            <path d="M253 300 l3 3 5.5-5" stroke="#f0ece0" stroke-width="1.7" fill="none"/>
+          </g>
+        </g>
+        <!-- Island 5: Kildebruk (fog/locked) -->
+        <g class="isl" onclick="selectIsland(5)" tabindex="0" role="button" aria-label="Kildebruk – låst"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectIsland(5)}">
+          <ellipse cx="100" cy="322" rx="36" ry="18" fill="#8090a0" opacity=".3"/>
+          <ellipse cx="100" cy="322" rx="36" ry="18" fill="var(--fog)" id="fog-body" opacity=".9"/>
+          <ellipse cx="88" cy="314" rx="25" ry="14" fill="#d8e8f0" id="fog1" opacity=".8"/>
+          <ellipse cx="114" cy="318" rx="22" ry="12" fill="#dceef8" id="fog2" opacity=".8"/>
+          <ellipse cx="100" cy="322" rx="30" ry="16" fill="#d0e4f0" id="fog3" opacity=".65"/>
+          <g id="fog-lock">
+            <rect x="93" y="312" width="14" height="10" rx="2" fill="#8090a0" stroke="#f0ece0" stroke-width="1.2"/>
+            <path d="M96 312 v-3 a4 4 0 0 1 8 0 v3" stroke="#8090a0" stroke-width="1.6" fill="none"/>
+          </g>
+          <text x="100" y="346" text-anchor="middle" font-size="10" font-family="Georgia,serif" font-weight="700" fill="#506070" opacity=".65">Kildebruk</text>
+        </g>
+      </svg>
+    </div>
+
+    <!-- SIDE PANEL -->
+    <div class="map-side" role="complementary" aria-label="Øy-info og fremdrift">
+      <div class="ms-top">
+        <div class="ms-eyebrow">Kurskartet</div>
+        <div class="ms-title" id="ms-title">Velg en øy</div>
+        <div class="ms-sub" id="ms-sub">Klikk på et kapittel for å åpne det</div>
+      </div>
+      <div class="ms-body">
+        <div>
+          <div class="section-lbl">Fremdrift</div>
+          <div id="ms-stats" style="display:flex;gap:.4rem;flex-wrap:wrap">
+            <span style="font-size:11px;padding:3px 9px;border-radius:20px;background:var(--s2);border:1px solid var(--line);color:var(--ink2)">0 fullført</span>
+          </div>
+        </div>
+        <div>
+          <div class="section-lbl">Kildebruk-tåke</div>
+          <div class="ms-fog-txt" id="ms-fog-txt">Fullfør 3 kapitler for å åpne Kildebruk</div>
+          <div class="ms-fog-track"><div class="ms-fog-fill" id="ms-fog-fill" style="width:0%"></div></div>
+        </div>
+        <div class="ms-hint" id="ms-hint">Stiene viser anbefalt rekkefølge – men du bestemmer selv.</div>
+      </div>
+      <div class="ms-cta">
+        <button class="btn primary" id="ms-open-btn" style="width:100%" disabled onclick="openZoom()">Velg en øy</button>
+      </div>
+    </div>
+
+    <!-- ZOOM VIEW -->
+    <div class="zoom-view" id="zoom-view" role="dialog" aria-modal="true" aria-labelledby="zv-name">
+      <div class="zv-header">
+        <button class="zv-back" onclick="closeZoom()" aria-label="Tilbake til kartet">
+          <svg viewBox="0 0 12 12"><path d="M8 2L3 6l5 4"/></svg>Kartet
+        </button>
+        <div class="zv-info">
+          <div class="zv-name" id="zv-name"></div>
+          <div class="zv-sub" id="zv-sub-zoom"></div>
+        </div>
+        <span id="zv-pill"></span>
+      </div>
+      <div class="zv-body">
+        <p class="zv-desc" id="zv-desc"></p>
+        <div class="cards-lbl" id="cards-lbl-top">Prompt-kort</div>
+        <div class="cards-grid" id="zv-cards" role="list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="map-legend" role="contentinfo">
+    <div class="leg-item"><div class="leg-dot" style="background:#7a9850"></div>Fullført</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#6888a8"></div>Aktiv</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#8878b0"></div>Tilgjengelig</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#c8d8e8;border:1px solid #a0b8c8"></div>Låst</div>
+    <div style="margin-left:auto;font-size:11px;color:var(--ink3)" id="footer-kontakt"></div>
+  </div>
+</div>
+
+<!-- ADMIN OVERLAY -->
+<div class="admin-overlay" id="admin-overlay" role="dialog" aria-modal="true" aria-labelledby="admin-heading">
+  <div class="admin-panel">
+    <!-- PIN SCREEN -->
+    <div id="pin-screen">
+      <div class="ap-header">
+        <div class="ap-title" id="admin-heading">Admin-panel</div>
+        <span class="ap-badge">Kun for redaktør</span>
+        <button class="btn sm ghost" onclick="closeAdmin()">Lukk</button>
+      </div>
+      <div class="pin-screen">
+        <div class="pin-title">Skriv inn PIN-kode</div>
+        <div class="pin-sub">Admin-panelet er kun for redaktør av nettsiden.</div>
+        <input type="password" class="pin-input" id="pin-input" maxlength="4" placeholder="••••"
+               inputmode="numeric" autocomplete="off" onkeydown="if(event.key==='Enter')submitPin()">
+        <button class="btn primary" onclick="submitPin()">Logg inn</button>
+        <div class="pin-err" id="pin-err">Feil PIN-kode. Prøv igjen.</div>
+      </div>
+    </div>
+    <!-- ADMIN FORM (hidden until PIN correct) -->
+    <div id="admin-form-screen" style="display:none">
+      <div class="ap-header">
+        <div class="ap-title">Admin-panel</div>
+        <span class="ap-badge">Innlogget</span>
+        <button class="btn sm ghost" onclick="closeAdmin()">Lukk</button>
+      </div>
+      <div class="ap-body">
+        <div>
+          <div class="ap-form-title">Legg til nytt kort</div>
+          <div class="ap-form-sub">Kortet vises umiddelbart. Eksporter JSON for å lagre permanent.</div>
+          <div class="ap-form">
+            <div class="field-row">
+              <div class="field">
+                <label for="av-island">Øy</label>
+                <select id="av-island">
+                  <option value="0">Kom i gang</option>
+                  <option value="1" selected>Undervisning</option>
+                  <option value="2">Vurdering</option>
+                  <option value="3">Tilpasset</option>
+                  <option value="4">Koding</option>
+                  <option value="5">Kildebruk</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="av-time">Tidsbruk</label>
+                <input type="text" id="av-time" placeholder="5 min">
+              </div>
+            </div>
+            <div class="field">
+              <label for="av-title">Tittel</label>
+              <input type="text" id="av-title" placeholder="Kortets tittel" oninput="livePreview()">
+            </div>
+            <div class="field">
+              <label for="av-out">Hva læreren får</label>
+              <input type="text" id="av-out" placeholder="Én setning" oninput="livePreview()">
+            </div>
+            <div class="field">
+              <label for="av-do">Gjør dette</label>
+              <input type="text" id="av-do" placeholder="Instruksjon til læreren" oninput="livePreview()">
+            </div>
+            <div class="field">
+              <label for="av-prompt">Prompt</label>
+              <textarea id="av-prompt" placeholder="Du er lærer i [FAG]..." oninput="livePreview()"></textarea>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="av-tags">Emneknagger</label>
+                <input type="text" id="av-tags" placeholder="Vg1, Norsk">
+              </div>
+              <div class="field">
+                <label for="av-udir">Fagkode</label>
+                <input type="text" id="av-udir" placeholder="NOR01-06">
+              </div>
+            </div>
+            <button class="btn green" onclick="addCard()" style="width:100%">Legg til kort</button>
+          </div>
+        </div>
+        <div>
+          <div class="ap-preview-lbl">Forhåndsvisning</div>
+          <div id="av-preview"><div class="ap-preview-empty">Fyll ut skjemaet for å se forhåndsvisning</div></div>
+          <div class="ap-card-list">
+            <div class="ap-card-list-lbl">Egne kort (<span id="custom-count">0</span>)</div>
+            <div id="ap-list-body"><div style="font-size:11px;color:var(--ink3);font-style:italic">Ingen lagt til ennå</div></div>
+          </div>
+          <button class="btn" onclick="exportData()" style="width:100%;margin-top:.875rem">Eksporter data.json</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="save-modal" role="dialog" aria-modal="true" aria-labelledby="save-modal-title">
+  <div class="modal">
+    <button class="modal-close" onclick="closeSaveModal()" aria-label="Lukk">×</button>
+    <div class="modal-title" id="save-modal-title">Lagre prompt i Min bank</div>
+    <div class="field" style="margin-bottom:.75rem">
+      <label for="save-name">Gi prompten et navn</label>
+      <input type="text" id="save-name" placeholder="f.eks. Norsk Vg2 – romantikken – åpningstekst"
+             onkeydown="if(event.key==='Enter')confirmSave()">
+    </div>
+    <div class="cache-warning">
+      <div class="cw-icon"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5M8 11v.5"/></svg></div>
+      <div class="cw-body">
+        <div class="cw-title">Lagres kun i denne nettleseren</div>
+        <div class="cw-text">«Min bank» bruker nettleserens cache (localStorage) og er ikke lagret på server. Hvis du sletter nettleserdata, tømmer cache eller bytter nettleser, vil promptene forsvinne. <strong>Last alltid ned en .txt-kopi</strong> for sikker lagring.</div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn primary" onclick="confirmSave()">Lagre i Min bank</button>
+      <button class="btn ghost" onclick="closeSaveModal()">Avbryt</button>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="data.js"></script>
+<script>
+// ── STATE ──
+let state = JSON.parse(localStorage.getItem('ki-state') || 'null') || {
+  completed: {},      // { "und-01": true, ... }
+  islandsDone: {},    // { 0: true, ... }  (whole island done)
+  wizardUnlocked: {}  // { 1: true } = wizard on island 1 unlocked
+};
+let customCards = [];
+let activeIsland = null;
+let tapCount = 0, tapTimer = null;
+let pendingSavePrompt = null, pendingSaveId = null;
+let adminUnlocked = false;
+
+function saveState() { localStorage.setItem('ki-state', JSON.stringify(state)); }
+
+// ── INIT ──
+function init() {
+  if (CONFIG.kontakt) document.getElementById('footer-kontakt').textContent = CONFIG.kontakt;
+  updateBankBadge();
+  recalcProgress();
+}
+
+// ── ISLAND SELECTION ──
+function selectIsland(i) {
+  activeIsland = i;
+  const isl = ISLANDS[i];
+  document.getElementById('ms-title').textContent = isl.name;
+  document.getElementById('ms-sub').textContent = isl.desc;
+  const btn = document.getElementById('ms-open-btn');
+  btn.disabled = (isl.status === 'locked');
+  btn.textContent = isl.status === 'locked' ? 'Låst – ikke tilgjengelig' : 'Åpne ' + isl.name;
+  document.querySelectorAll('.isl').forEach((el, j) => {
+    el.style.opacity = j === i ? '1' : '0.65';
+  });
+}
+
+// ── ZOOM VIEW ──
+function openZoom() {
+  if (activeIsland === null || ISLANDS[activeIsland].status === 'locked') return;
+  const isl = ISLANDS[activeIsland];
+  document.getElementById('zv-name').textContent = isl.name;
+  document.getElementById('zv-sub-zoom').textContent = isl.desc.substring(0, 60) + '…';
+  document.getElementById('zv-pill').outerHTML = '<span id="zv-pill">' + statusPill(isl.status) + '</span>';
+  document.getElementById('zv-desc').textContent = isl.desc;
+
+  const wizUnlocked = state.wizardUnlocked[isl.id] || isl.wizardUnlockAt === 0;
+  const completedOnIsland = isl.cards.filter(c => c.type === 'simple' && state.completed[c.id]).length;
+  const remaining = Math.max(0, isl.wizardUnlockAt - completedOnIsland);
+
+  const allCards = [...isl.cards, ...customCards.filter(c => parseInt(c.island) === activeIsland)];
+  document.getElementById('zv-cards').innerHTML = allCards.map(c => renderCard(c, isl, wizUnlocked, remaining)).join('');
+
+  document.getElementById('zoom-view').classList.add('open');
+  document.querySelector('.zv-back').focus();
+
+  // Måle hvilke prompter som overflyter og skru på "Vis mer"-knappen
+  requestAnimationFrame(updatePromptClamps);
+}
+
+function updatePromptClamps() {
+  document.querySelectorAll('.pc-prompt').forEach(el => {
+    if (el.classList.contains('expanded')) return;
+    const tid = el.id.replace('pr-', 'pt-');
+    const toggleRow = document.getElementById(tid);
+    if (!toggleRow) return;
+    // scrollHeight > clientHeight = teksten er lengre enn synlig område
+    if (el.scrollHeight > el.clientHeight + 2) {
+      el.classList.add('clamped');
+      toggleRow.style.display = '';
+    } else {
+      el.classList.remove('clamped');
+      toggleRow.style.display = 'none';
+    }
+  });
+}
+
+function togglePrompt(pid, tid) {
+  const el = document.getElementById(pid);
+  const row = document.getElementById(tid);
+  const btn = row.querySelector('.pc-toggle');
+  const lbl = btn.querySelector('.pc-toggle-lbl');
+  const isOpen = el.classList.toggle('expanded');
+  btn.classList.toggle('is-open', isOpen);
+  btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  lbl.textContent = isOpen ? 'Vis mindre' : 'Vis hele prompten';
+  if (isOpen) {
+    el.classList.remove('clamped');
+  } else {
+    el.classList.add('clamped');
+  }
+}
+
+function closeZoom() {
+  document.getElementById('zoom-view').classList.remove('open');
+  document.querySelectorAll('.isl').forEach(el => { el.style.opacity = '1'; });
+}
+
+function statusPill(s) {
+  const m = { done: 'sp-done', active: 'sp-active', open: 'sp-open', locked: 'sp-locked' };
+  const t = { done: 'Fullført', active: 'Aktiv', open: 'Tilgjengelig', locked: 'Låst' };
+  return `<span class="sp ${m[s] || 'sp-open'}">${t[s] || s}</span>`;
+}
+
+// ── RENDER CARD ──
+function renderCard(c, isl, wizUnlocked, remaining) {
+  if (c.type === 'wizard') {
+    const locked = !wizUnlocked;
+    return `<div class="wcard ${locked ? 'locked' : ''}" role="listitem">
+      <div class="wc-head">
+        <div class="wc-title ${locked ? 'locked-title' : ''}">${c.title}</div>
+        <div class="wc-out ${locked ? 'locked-out' : ''}">${c.out}</div>
+      </div>
+      <div class="wc-body">Veiviser: velg fag → finn kompetansemål på Udir → tilpass → generer Copilot-prompt.</div>
+      ${locked
+        ? `<div class="wc-lock-msg"><svg viewBox="0 0 12 12"><rect x="2" y="5" width="8" height="6" rx="1"/><path d="M4 5V3.5a2 2 0 014 0V5"/></svg>Fullfør ${remaining} kort til for å låse opp</div>`
+        : `<div class="wc-foot"><a href="veiviser.html" class="btn primary sm">Åpne veiviseren →</a></div>`
+      }
+    </div>`;
+  }
+
+  const done = state.completed[c.id] || false;
+  const pid = 'pr-' + c.id;
+  const tid = 'pt-' + c.id;
+  const tags = (c.tags || []).map(t => `<span style="font-size:10px;padding:2px 7px;background:var(--s2);border:1px solid var(--line);border-radius:20px;color:var(--ink3)">${t}</span>`).join('');
+  return `<div class="pcard" role="listitem">
+    <div class="pc-head">
+      <div class="pc-title">${c.title}</div>
+      <div class="pc-out">${c.out}</div>
+      <div class="pc-time">${c.time}</div>
+    </div>
+    <div class="pc-do"><strong>Gjør dette</strong>${c.doThis}</div>
+    <div class="pc-prompt" id="${pid}">${c.prompt}</div>
+    <div class="pc-toggle-row" id="${tid}" style="display:none">
+      <button class="pc-toggle" onclick="togglePrompt('${pid}','${tid}')" aria-expanded="false" aria-controls="${pid}">
+        <span class="pc-toggle-lbl">Vis hele prompten</span>
+        <svg viewBox="0 0 10 10"><path d="M2 3.5l3 3 3-3"/></svg>
+      </button>
+    </div>
+    <div class="pc-foot">
+      <button class="copy-btn" id="cb-${c.id}" onclick="doCopy('${pid}','cb-${c.id}')" aria-label="Kopiér prompt">Kopiér</button>
+      <button class="copilot-btn" onclick="openCopilot('${pid}')" aria-label="Kopier og åpne Copilot">
+        <svg viewBox="0 0 11 11"><path d="M8 1H10V3"/><path d="M5.5 5.5L10 1"/><path d="M5 2H2a1 1 0 00-1 1v6a1 1 0 001 1h6a1 1 0 001-1V6"/></svg>Copilot
+      </button>
+      <button class="btn sm" style="margin-left:auto;border-color:var(--amber-hi);background:var(--amber-bg);color:var(--amber)"
+              onclick="openSaveModal('${pid}','${c.id}')" aria-label="Lagre prompt i Min bank">Lagre</button>
+      <label class="done-chk" style="margin-left:.25rem">
+        <input type="checkbox" ${done ? 'checked' : ''} onchange="tickDone('${c.id}',${isl.id},this.checked)" aria-label="Merk som fullført">
+        Ferdig
+      </label>
+    </div>
+    ${tags ? `<div style="padding:.3rem .875rem .5rem;display:flex;gap:.3rem;flex-wrap:wrap">${tags}</div>` : ''}
+  </div>`;
+}
+
+// ── PROGRESS / DONE ──
+function tickDone(cardId, islId, checked) {
+  if (checked) state.completed[cardId] = true;
+  else delete state.completed[cardId];
+  recalcProgress();
+  checkWizardUnlock(islId);
+  saveState();
+  if (activeIsland !== null) openZoom();
+}
+
+function recalcProgress() {
+  let done = 0;
+  ISLANDS.forEach(isl => {
+    const simplCards = isl.cards.filter(c => c.type === 'simple');
+    if (simplCards.length > 0 && simplCards.every(c => state.completed[c.id])) {
+      state.islandsDone[isl.id] = true;
+      done++;
+    } else {
+      state.islandsDone[isl.id] = false;
+    }
+  });
+  const pct = Math.round(done / 6 * 100);
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-txt').textContent = done + '/6';
+
+  const fogPct = Math.min(Math.round(done / CONFIG.fogUnlockAt * 100), 100);
+  document.getElementById('ms-fog-fill').style.width = fogPct + '%';
+  if (fogPct >= 100) {
+    ['fog1','fog2','fog3','fog-body'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.setAttribute('opacity', '0.06');
+    });
+    const lock = document.getElementById('fog-lock'); if (lock) lock.setAttribute('opacity','0');
+    ISLANDS[5].status = 'open';
+    document.getElementById('ms-fog-txt').textContent = 'Kildebruk er nå tilgjengelig!';
+  } else {
+    document.getElementById('ms-fog-txt').textContent = `Fullfør ${CONFIG.fogUnlockAt} kapitler for å åpne Kildebruk (${done}/${CONFIG.fogUnlockAt})`;
+  }
+
+  updateMapVisuals();
+}
+
+// Colour palettes per island for done/active/open states
+const ISL_COLOURS = [
+  // island 0: green
+  { done: { body:'#5a8838', hi:'#7ab050' }, active: { body:'#6888a8', hi:'#88aac8' }, open: { body:'#7a9850', hi:'#9ab870' } },
+  // island 1: blue
+  { done: { body:'#5a8838', hi:'#7ab050' }, active: { body:'#6888a8', hi:'#88aac8' }, open: { body:'#6888a8', hi:'#88aac8' } },
+  // island 2: purple
+  { done: { body:'#5a8838', hi:'#7ab050' }, active: { body:'#8878b0', hi:'#a898c8' }, open: { body:'#8878b0', hi:'#a898c8' } },
+  // island 3: amber
+  { done: { body:'#5a8838', hi:'#7ab050' }, active: { body:'#b88030', hi:'#d0a050' }, open: { body:'#b88030', hi:'#d0a050' } },
+  // island 4: coral
+  { done: { body:'#5a8838', hi:'#7ab050' }, active: { body:'#b86040', hi:'#d08060' }, open: { body:'#b86040', hi:'#d08060' } }
+];
+
+function updateMapVisuals() {
+  // Find the first non-done non-locked island (the 'active' one)
+  const activeId = ISLANDS.findIndex((isl, i) => i < 5 && !state.islandsDone[isl.id]);
+
+  ISLANDS.forEach((isl, i) => {
+    if (i === 5) return; // Kildebruk handled by fog logic separately
+    const isDone = state.islandsDone[isl.id];
+    const isActive = (i === activeId);
+    const col = ISL_COLOURS[i];
+
+    const body = document.getElementById('isl-body-' + i);
+    const hi   = document.getElementById('isl-hi-' + i);
+    const done = document.getElementById('isl-done-' + i);
+    const here = document.getElementById('isl-here-' + i);
+    const pulse = document.getElementById('isl-pulse-' + i);
+    const dotPulse = document.getElementById('isl-dot-pulse-' + i);
+
+    const state_key = isDone ? 'done' : isActive ? 'active' : 'open';
+
+    if (body) body.setAttribute('fill', col[state_key].body);
+    if (hi)   hi.setAttribute('fill',   col[state_key].hi);
+
+    // Done badge
+    if (done) done.setAttribute('opacity', isDone ? '1' : '0');
+
+    // "du er her" text
+    if (here) here.setAttribute('opacity', (!isDone && isActive) ? '1' : '0');
+
+    // Pulse ring (only on active, non-done island)
+    if (pulse) {
+      if (!isDone && isActive) {
+        pulse.style.display = '';
+      } else {
+        pulse.style.display = 'none';
+      }
+    }
+    if (dotPulse) {
+      dotPulse.style.display = (!isDone && isActive) ? '' : 'none';
+    }
+
+    // Update aria-label
+    const grp = document.getElementById('isl-g-' + i);
+    if (grp) {
+      const statusTxt = isDone ? 'fullført' : isActive ? 'aktiv – du er her' : 'tilgjengelig';
+      grp.setAttribute('aria-label', isl.name + ' – ' + statusTxt);
+    }
+  });
+}
+
+function checkWizardUnlock(islId) {
+  const isl = ISLANDS[islId];
+  if (!isl || isl.wizardUnlockAt === 0) return;
+  const completedCount = isl.cards.filter(c => c.type === 'simple' && state.completed[c.id]).length;
+  if (completedCount >= isl.wizardUnlockAt) state.wizardUnlocked[islId] = true;
+}
+
+// ── COPY & COPILOT ──
+function doCopy(pid, bid) {
+  const t = document.getElementById(pid).textContent;
+  const b = document.getElementById(bid);
+  const go = () => { b.textContent = 'Kopiert!'; b.classList.add('ok'); setTimeout(() => { b.textContent = 'Kopiér'; b.classList.remove('ok'); }, 2200); };
+  navigator.clipboard.writeText(t).then(go).catch(() => { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); go(); });
+}
+function openCopilot(pid) {
+  const t = document.getElementById(pid).textContent;
+  navigator.clipboard.writeText(t).catch(() => {});
+  window.open(CONFIG.copilotUrl, '_blank', 'noopener');
+}
+
+// ── SAVE MODAL ──
+function openSaveModal(pid, cardId) {
+  pendingSavePrompt = document.getElementById(pid).textContent;
+  pendingSaveId = cardId;
+  const card = ISLANDS.flatMap(i => i.cards).find(c => c.id === cardId);
+  document.getElementById('save-name').value = card ? card.title : '';
+  document.getElementById('save-modal').classList.add('open');
+  setTimeout(() => document.getElementById('save-name').focus(), 50);
+}
+function closeSaveModal() {
+  document.getElementById('save-modal').classList.remove('open');
+  pendingSavePrompt = null; pendingSaveId = null;
+}
+function confirmSave() {
+  const name = document.getElementById('save-name').value.trim();
+  if (!name) { document.getElementById('save-name').focus(); return; }
+  const bank = JSON.parse(localStorage.getItem('ki-bank') || '[]');
+  bank.unshift({ id: Date.now(), name, prompt: pendingSavePrompt, dato: new Date().toLocaleDateString('no-NO'), cardId: pendingSaveId });
+  localStorage.setItem('ki-bank', JSON.stringify(bank));
+  updateBankBadge();
+  closeSaveModal();
+  showToast('Lagret i Min bank!');
+}
+function updateBankBadge() {
+  const bank = JSON.parse(localStorage.getItem('ki-bank') || '[]');
+  const badge = document.getElementById('bank-badge');
+  if (bank.length > 0) { badge.textContent = bank.length; badge.style.display = 'flex'; }
+  else badge.style.display = 'none';
+}
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.15)';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// ── ADMIN ──
+function checkAdminPin() { document.getElementById('admin-overlay').classList.add('open'); document.getElementById('pin-input').focus(); }
+function closeAdmin() {
+  document.getElementById('admin-overlay').classList.remove('open');
+  document.getElementById('pin-screen').style.display = '';
+  document.getElementById('admin-form-screen').style.display = 'none';
+  document.getElementById('pin-input').value = '';
+  document.getElementById('pin-err').classList.remove('show');
+  adminUnlocked = false;
+}
+function submitPin() {
+  const val = document.getElementById('pin-input').value;
+  if (val === ADMIN_PIN) {
+    document.getElementById('pin-screen').style.display = 'none';
+    document.getElementById('admin-form-screen').style.display = '';
+    adminUnlocked = true;
+  } else {
+    document.getElementById('pin-err').classList.add('show');
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-input').focus();
+  }
+}
+function adminTap() {
+  tapCount++; clearTimeout(tapTimer);
+  tapTimer = setTimeout(() => { tapCount = 0; }, 600);
+  if (tapCount >= 3) { tapCount = 0; checkAdminPin(); }
+}
+document.getElementById('logo-tap').addEventListener('click', adminTap);
+
+function livePreview() {
+  const t = document.getElementById('av-title').value;
+  const o = document.getElementById('av-out').value;
+  const d = document.getElementById('av-do').value;
+  const p = document.getElementById('av-prompt').value;
+  const tm = document.getElementById('av-time').value;
+  if (!t && !p) { document.getElementById('av-preview').innerHTML = '<div class="ap-preview-empty">Fyll ut skjemaet for å se forhåndsvisning</div>'; return; }
+  document.getElementById('av-preview').innerHTML = `<div class="pcard" style="max-width:260px">
+    <div class="pc-head"><div class="pc-title">${t||'Tittel…'}</div><div class="pc-out">${o||'Hva du får…'}</div><div class="pc-time">${tm}</div></div>
+    <div class="pc-do"><strong>Gjør dette</strong>${d||'Instruksjon…'}</div>
+    <div class="pc-prompt">${p||'Prompt vises her…'}</div>
+    <div class="pc-foot"><span style="font-size:11px;color:var(--ink3);font-style:italic">Forhåndsvisning</span></div>
+  </div>`;
+}
+function addCard() {
+  const t = document.getElementById('av-title').value.trim();
+  const p = document.getElementById('av-prompt').value.trim();
+  if (!t || !p) { alert('Fyll inn tittel og prompt.'); return; }
+  const tags = document.getElementById('av-tags').value.split(',').map(s => s.trim()).filter(Boolean);
+  customCards.push({ id: 'c' + Date.now(), type: 'simple', island: document.getElementById('av-island').value, title: t, out: document.getElementById('av-out').value, doThis: document.getElementById('av-do').value, prompt: p, time: document.getElementById('av-time').value, tags });
+  renderAdminList();
+  ['av-title','av-out','av-do','av-prompt','av-tags','av-udir','av-time'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('av-preview').innerHTML = '<div class="ap-preview-empty" style="color:var(--green);font-weight:600">Kort lagt til!</div>';
+  setTimeout(() => { document.getElementById('av-preview').innerHTML = '<div class="ap-preview-empty">Fyll ut skjemaet for å se forhåndsvisning</div>'; }, 1800);
+}
+function renderAdminList() {
+  document.getElementById('custom-count').textContent = customCards.length;
+  if (!customCards.length) { document.getElementById('ap-list-body').innerHTML = '<div style="font-size:11px;color:var(--ink3);font-style:italic">Ingen lagt til ennå</div>'; return; }
+  const islColors = ['#4a6030','#2a4a70','#483870','#604010','#602818','#305060'];
+  const islNames = ISLANDS.map(i => i.name);
+  document.getElementById('ap-list-body').innerHTML = customCards.map((c, i) => `
+    <div class="ap-card-row">
+      <span class="ap-card-isl" style="background:${islColors[c.island]||'#444'}22;color:${islColors[c.island]||'#444'}">${islNames[c.island]||'?'}</span>
+      <span class="ap-card-title">${c.title}</span>
+      <button class="btn sm danger" onclick="deleteCard(${i})">Slett</button>
+    </div>`).join('');
+}
+function deleteCard(i) { customCards.splice(i, 1); renderAdminList(); }
+function exportData() {
+  const out = { generert: new Date().toISOString(), islands: ISLANDS.map(isl => ({ ...isl, cards: [...isl.cards, ...customCards.filter(c => parseInt(c.island) === isl.id)] })) };
+  const b = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(b); const a = document.createElement('a'); a.href = url; a.download = 'ki-kart-data.json'; a.click(); URL.revokeObjectURL(url);
+}
+
+// Close modals on backdrop click
+document.getElementById('save-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeSaveModal(); });
+document.getElementById('admin-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeAdmin(); });
+
+// Keyboard: close zoom on Escape
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (document.getElementById('zoom-view').classList.contains('open')) closeZoom(); else if (document.getElementById('save-modal').classList.contains('open')) closeSaveModal(); else if (document.getElementById('admin-overlay').classList.contains('open')) closeAdmin(); } });
+
+init();
+</script>
+</body>
+</html>

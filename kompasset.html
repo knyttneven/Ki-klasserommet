@@ -1,0 +1,221 @@
+<!DOCTYPE html><html lang="no"><head>
+
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Kompasset – KI i klasserommet</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="kompasset.css">
+</head>
+<body style="cursor: crosshair; background-color: rgb(62, 84, 113);" data-cc-id="cc-1">
+
+<a href="#main-content" class="sr-only" style="position:absolute;top:12px;left:12px;background:var(--blue);color:#fff;padding:8px 16px;border-radius:8px;font-weight:700;font-size:13px;text-decoration:none;z-index:9999;transform:translateY(-200%);transition:transform .15s">Hopp til innhold</a>
+
+<div class="app" role="application">
+
+  <!-- TOPBAR -->
+  <div class="topbar" role="banner">
+    <a href="index.html" class="tb-logo">KI<em> i klasserommet</em></a>
+    <nav class="tb-nav" role="navigation" aria-label="Hovednavigasjon">
+      <a href="index.html">Kurskartet</a>
+      <a href="veiviser.html">Veiviseren</a>
+      <a href="min-bank.html">Min bank</a>
+      <a href="kompasset.html" class="active" aria-current="page">Kompasset</a>
+    </nav>
+    <div class="tb-right">
+      <a href="min-bank.html" class="tb-btn bank" aria-label="Min prompt-bank">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="10" height="8" rx="1.5"></rect><path d="M4 3V2a2 2 0 014 0v1"></path></svg>
+        Min bank
+      </a>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="page-body" id="main-content" role="main">
+    <div class="kompass-wrap">
+      <div id="kompass-root" aria-live="polite" data-protonpass-form="">
+    <div class="kg-hero">
+      <div class="kg-hero-ikon" aria-hidden="true">🧭</div>
+      <h1>Kompasset</h1>
+      <p>Råd, oppskrifter og svar på det lærere ofte lurer på når de bruker KI i undervisningen.</p>
+      <div class="kg-search-wrap">
+        <svg class="kg-search-ic" viewBox="0 0 16 16" aria-hidden="true">
+          <circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+          <path d="M11 11 l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+        </svg>
+        <input id="kg-search" type="search" placeholder="Søk i tips og instruksjoner…" value="" oninput="onSearch(this.value)">
+      </div>
+    </div>
+
+    
+    <div class="kg-featured">
+      <div class="kg-featured-ic">📍</div>
+      <div class="kg-featured-body">
+        <div class="kg-featured-lbl">Start her</div>
+        <div class="kg-featured-title">Velkommen til KI i klasserommet</div>
+        <div class="kg-featured-desc">En rask omvisning gjennom de tre hovedsidene — Kurskartet, Veiviseren og Min bank.</div>
+      </div>
+      <button class="btn primary sm" onclick="openTips('start-01')">Les →</button>
+    </div>
+
+    <div class="kg-section-label">Kategorier</div>
+    <div class="kg-grid">
+      <button class="kg-card" data-kat="kom-i-gang" onclick="openKategori('kom-i-gang')">
+        <div class="kg-ic">📍</div>
+        <div class="kg-title">Kom i gang</div>
+        <div class="kg-desc">Start her — 2-min omvisning gjennom nettsiden.</div>
+        <div class="kg-count">1 artikkel</div>
+      </button>
+      <button class="kg-card" data-kat="prompt-tips" onclick="openKategori('prompt-tips')">
+        <div class="kg-ic">💡</div>
+        <div class="kg-title">Prompt-tips</div>
+        <div class="kg-desc">Rolle, kontekst, rammer — slik skriver du gode prompts.</div>
+        <div class="kg-count">2 artikler</div>
+      </button>
+      <button class="kg-card" data-kat="pedagogikk" onclick="openKategori('pedagogikk')">
+        <div class="kg-ic">🎓</div>
+        <div class="kg-title">Pedagogiske råd</div>
+        <div class="kg-desc">KI som sparringspartner — ikke erstatter for læreren.</div>
+        <div class="kg-count">1 artikkel</div>
+      </button>
+      <button class="kg-card" data-kat="teknisk" onclick="openKategori('teknisk')">
+        <div class="kg-ic">⚙️</div>
+        <div class="kg-title">Tekniske tips</div>
+        <div class="kg-desc">Copilot-innstillinger, snarveier og feilsøking.</div>
+        <div class="kg-count">1 artikkel</div>
+      </button>
+      <button class="kg-card" data-kat="personvern" onclick="openKategori('personvern')">
+        <div class="kg-ic">🔒</div>
+        <div class="kg-title">Personvern</div>
+        <div class="kg-desc">Hva du kan og ikke kan lime inn i Copilot.</div>
+        <div class="kg-count">1 artikkel</div>
+      </button>
+      <button class="kg-card" data-kat="ordliste" onclick="openKategori('ordliste')">
+        <div class="kg-ic">📚</div>
+        <div class="kg-title">Begreper</div>
+        <div class="kg-desc">Prompt, hallusinasjon, token — ordliste for lærere.</div>
+        <div class="kg-count">2 artikler</div>
+      </button>
+      <button class="kg-card" data-kat="video" onclick="openKategori('video')">
+        <div class="kg-ic">🎬</div>
+        <div class="kg-title">Videoguider</div>
+        <div class="kg-desc">Korte skjermopptak av veiviseren og kortene.</div>
+        <div class="kg-count">0 artikler</div>
+      </button>
+      <button class="kg-card" data-kat="faq" onclick="openKategori('faq')">
+        <div class="kg-ic">❓</div>
+        <div class="kg-title">FAQ</div>
+        <div class="kg-desc">Svar på det kollegene ofte spør om.</div>
+        <div class="kg-count">1 artikkel</div>
+      </button></div>
+  </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Admin-FAB (synlig for alle, men krever PIN for å redigere) -->
+<button class="kg-admin-fab" onclick="openAdmin()" aria-label="Åpne admin-panel for Kompasset">
+  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8">
+    <circle cx="6" cy="6" r="1.6"></circle>
+    <path d="M6 1v1.5M6 9.5V11M11 6h-1.5M2.5 6H1M9.54 2.46l-1.06 1.06M3.52 8.48l-1.06 1.06M9.54 9.54l-1.06-1.06M3.52 3.52l-1.06-1.06"></path>
+  </svg>
+  Admin
+</button>
+
+<!-- ADMIN-MODAL -->
+<div class="kg-admin-modal" id="kg-admin-modal" role="dialog" aria-modal="true" aria-labelledby="kg-admin-title">
+  <div class="kg-admin-dialog">
+    <div class="kg-admin-head">
+      <h2 id="kg-admin-title">Kompasset — redigering</h2>
+      <button class="kg-admin-close" onclick="closeAdmin()" aria-label="Lukk">×</button>
+    </div>
+    <div class="kg-admin-body">
+
+      <!-- PIN-visning -->
+      <div id="kg-admin-pin-view" class="kg-pin-view" data-protonpass-form="" style="display: none;">
+        <p>Skriv inn admin-PIN for å redigere tips, legge til bilder eller endre kategorier.</p>
+        <input id="kg-admin-pin" type="password" inputmode="numeric" maxlength="8" placeholder="••••" autocomplete="off">
+        <div class="kg-pin-err" id="kg-admin-pin-err" aria-live="polite"></div>
+        <button class="btn primary" onclick="tryUnlockAdmin()" style="width:100%">Lås opp</button>
+        <p class="kg-pin-hint">Alle kan lese Kompasset — PIN kreves kun for å endre innhold.</p>
+      </div>
+
+      <!-- Admin-panel -->
+      <div id="kg-admin-panel" style="">
+        <div id="kg-admin-list" data-edit-id="tip-1776684648848">
+    <div class="ka-edit" data-protonpass-form="">
+      <button class="btn ghost sm" onclick="renderAdminList()">‹ Tilbake til oversikt</button>
+
+      <div class="ka-field">
+        <label>Tittel</label>
+        <input id="ka-tittel" type="text" value="Nytt tips">
+      </div>
+
+      <div class="ka-field-row">
+        <div class="ka-field">
+          <label>Kategori</label>
+          <select id="ka-kategori"><option value="kom-i-gang" selected="">📍 Kom i gang</option><option value="prompt-tips">💡 Prompt-tips</option><option value="pedagogikk">🎓 Pedagogiske råd</option><option value="teknisk">⚙️ Tekniske tips</option><option value="personvern">🔒 Personvern</option><option value="ordliste">📚 Begreper</option><option value="video">🎬 Videoguider</option><option value="faq">❓ FAQ</option></select>
+        </div>
+        <div class="ka-field" style="max-width:120px">
+          <label>Lesetid (min)</label>
+          <input id="ka-minutter" type="number" min="1" max="60" value="2">
+        </div>
+        <div class="ka-field" style="max-width:160px">
+          <label>Oppdatert</label>
+          <input id="ka-oppdatert" type="date" value="2026-04-20">
+        </div>
+      </div>
+
+      <div class="ka-field">
+        <label>Ingress (kort teaser-tekst)</label>
+        <textarea id="ka-ingress" rows="2"></textarea>
+      </div>
+
+      <div class="ka-field">
+        <label>Innhold — blokker</label>
+        <div id="ka-blokker">
+    <div class="ka-blokk" data-i="0" data-type="p">
+      <div class="ka-blokk-head">
+        <span class="ka-blokk-type">Avsnitt</span>
+        <div class="ka-blokk-actions">
+          <button class="btn ghost sm" onclick="adminMoveBlock(0, -1)" title="Flytt opp">↑</button>
+          <button class="btn ghost sm" onclick="adminMoveBlock(0, +1)" title="Flytt ned">↓</button>
+          <button class="btn ghost sm" onclick="adminRemoveBlock(0)" title="Fjern">×</button>
+        </div>
+      </div>
+      <div class="ka-blokk-body"><textarea data-k="tekst" rows="3"></textarea></div>
+    </div>
+  </div>
+        <div class="ka-add-blokk">
+          <span>Legg til blokk:</span>
+          <button class="btn ghost sm" onclick="adminAddBlock('p')">+ Avsnitt</button>
+          <button class="btn ghost sm" onclick="adminAddBlock('h2')">+ Mellomtittel</button>
+          <button class="btn ghost sm" onclick="adminAddBlock('liste')">+ Liste</button>
+          <button class="btn ghost sm" onclick="adminAddBlock('tips')">+ Tips-boks</button>
+          <button class="btn ghost sm" onclick="adminAddBlock('kode')">+ Kode/prompt</button>
+          <button class="btn ghost sm" onclick="adminAddBlock('bilde')">+ Bilde</button>
+          <button class="btn ghost sm" onclick="adminAddBlock('video')">+ Video</button>
+          <button class="btn ghost sm" onclick="adminAddBlock('lenke')">+ Lenke</button>
+        </div>
+      </div>
+
+      <div class="ka-save-row">
+        <button class="btn primary" onclick="adminSave('tip-1776684648848')">Lagre endringer</button>
+        <span id="ka-save-msg" class="ka-save-msg"></span>
+      </div>
+    </div>
+  </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="kompasset-data.js"></script>
+<script src="kompasset.js"></script>
+
+
+</body></html>

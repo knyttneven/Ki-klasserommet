@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Min bank – KI i klasserommet</title>
+<link rel="stylesheet" href="style.css">
+<style>
+body { display: flex; align-items: flex-start; justify-content: center; padding: 1.5rem 1rem 3rem; }
+</style>
+</head>
+<body>
+<a href="#main-content" class="sr-only" style="position:absolute;top:12px;left:12px;background:var(--blue);color:#fff;padding:8px 16px;border-radius:8px;font-weight:700;font-size:13px;text-decoration:none;z-index:9999;transform:translateY(-200%);transition:transform .15s">Hopp til innhold</a>
+
+<div class="app" role="application">
+
+  <div class="topbar" role="banner">
+    <a href="index.html" class="tb-logo">KI<em> i klasserommet</em></a>
+    <nav class="tb-nav" role="navigation" aria-label="Hovednavigasjon">
+      <a href="index.html">Kurskartet</a>
+      <a href="veiviser.html">Veiviseren</a>
+      <a href="min-bank.html" class="active" aria-current="page">Min bank</a>
+      <a href="kompasset.html">Kompasset</a>
+    </nav>
+    <div class="tb-right">
+      <a href="min-bank.html" class="tb-btn bank" aria-label="Min prompt-bank (aktiv side)">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="10" height="8" rx="1.5"/><path d="M4 3V2a2 2 0 014 0v1"/></svg>
+        Min bank
+        <span class="bank-badge" id="bank-badge" style="display:none">0</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="page-body" id="main-content" role="main">
+
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.75rem">
+      <div>
+        <h1 class="page-title" style="margin-bottom:.3rem">Min prompt-bank</h1>
+        <p class="page-sub" style="margin-bottom:0">Dine lagrede prompts fra veiviseren og kortene.</p>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <button class="btn" onclick="exportAllTxt()" id="export-all-btn" disabled aria-label="Last ned alle prompts som .txt">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6.5 1v8M3.5 6l3 3 3-3"/><path d="M1 10v1a1 1 0 001 1h9a1 1 0 001-1v-1"/></svg>
+          Last ned alle (.txt)
+        </button>
+        <button class="btn danger" onclick="confirmClearAll()" id="clear-all-btn" disabled aria-label="Tøm hele prompt-banken">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h9M5 3V2h3v1M4 3l.5 8M8.5 3L8 11M6.5 3v8"/></svg>
+          Tøm bank
+        </button>
+      </div>
+    </div>
+
+    <!-- CACHE WARNING (always visible) -->
+    <div class="cache-warning" style="margin-bottom:1.5rem">
+      <div class="cw-icon"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5M8 11v.5"/></svg></div>
+      <div class="cw-body">
+        <div class="cw-title">Promptene lagres kun i denne nettleseren</div>
+        <div class="cw-text">«Min bank» bruker nettleserens cache (localStorage) og er <strong>ikke lagret på server eller i skyen</strong>. Hvis du tømmer nettleserens cache, bruker privat modus, bytter nettleser eller logger på en annen PC, vil promptene forsvinne.<br><br>
+        <strong>Anbefaling:</strong> Last ned en .txt-kopi av viktige prompts og lagre dem i OneDrive, en Teams-kanal eller en lokal mappe. Da er de trygge uansett.</div>
+      </div>
+    </div>
+
+    <!-- EMPTY STATE -->
+    <div class="bank-empty" id="bank-empty" style="display:none">
+      <div style="font-size:2rem;margin-bottom:.75rem;opacity:.4">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="var(--ink3)" stroke-width="1.5"><rect x="8" y="14" width="32" height="26" rx="4"/><path d="M16 14V12a8 8 0 0116 0v2"/><line x1="24" y1="24" x2="24" y2="32"/><line x1="20" y1="28" x2="28" y2="28"/></svg>
+      </div>
+      <div style="font-size:15px;font-weight:600;color:var(--ink2);margin-bottom:.4rem">Banken er tom</div>
+      <div style="font-size:13px;color:var(--ink3);margin-bottom:1.25rem">Lagre prompts fra kortene på øyene eller fra veiviseren.</div>
+      <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap">
+        <a href="index.html" class="btn primary sm">Gå til kurskartet</a>
+        <a href="veiviser.html" class="btn sm">Bruk veiviseren</a>
+      </div>
+    </div>
+
+    <!-- BANK GRID -->
+    <div class="bank-grid" id="bank-grid" role="list" aria-label="Lagrede prompts" aria-live="polite"></div>
+
+  </div>
+
+  <footer role="contentinfo">
+    <div class="footer-note">KI i klasserommet</div>
+    <div class="footer-links">
+      <a href="index.html">Kurskartet</a>
+      <a href="veiviser.html">Veiviseren</a>
+    </div>
+  </footer>
+</div>
+
+<!-- CONFIRM CLEAR MODAL -->
+<div class="modal-backdrop" id="clear-modal" role="dialog" aria-modal="true" aria-labelledby="clear-title">
+  <div class="modal">
+    <button class="modal-close" onclick="closeClearModal()" aria-label="Lukk">×</button>
+    <div class="modal-title" id="clear-title" style="color:var(--red)">Tøm hele banken?</div>
+    <p style="font-size:13px;color:var(--ink2);margin-bottom:1rem;line-height:1.6">Dette vil slette alle lagrede prompts permanent fra denne nettleseren. Handlingen kan ikke angres.<br><br>Last ned en .txt-kopi først hvis du vil beholde dem.</p>
+    <div class="modal-actions">
+      <button class="btn danger" onclick="clearAll()">Ja, tøm banken</button>
+      <button class="btn ghost" onclick="closeClearModal()">Avbryt</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-backdrop" id="edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+  <div class="modal" style="max-width:520px">
+    <button class="modal-close" onclick="closeEditModal()" aria-label="Lukk">×</button>
+    <div class="modal-title" id="edit-title">Rediger prompt</div>
+    <div class="field" style="margin-bottom:.75rem">
+      <label for="edit-name">Navn</label>
+      <input type="text" id="edit-name">
+    </div>
+    <div class="field" style="margin-bottom:1rem">
+      <label for="edit-prompt">Prompt</label>
+      <textarea id="edit-prompt" rows="8" style="font-family:'Courier New',monospace;font-size:12px"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn primary" onclick="saveEdit()">Lagre endringer</button>
+      <button class="btn ghost" onclick="closeEditModal()">Avbryt</button>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+let editingId = null;
+
+function getBank() { return JSON.parse(localStorage.getItem('ki-bank') || '[]'); }
+function saveBank(bank) { localStorage.setItem('ki-bank', JSON.stringify(bank)); }
+
+function renderBank() {
+  const bank = getBank();
+  const grid = document.getElementById('bank-grid');
+  const empty = document.getElementById('bank-empty');
+  const exportBtn = document.getElementById('export-all-btn');
+  const clearBtn = document.getElementById('clear-all-btn');
+
+  updateBankBadge(bank.length);
+
+  if (!bank.length) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    exportBtn.disabled = true;
+    clearBtn.disabled = true;
+    return;
+  }
+  empty.style.display = 'none';
+  exportBtn.disabled = false;
+  clearBtn.disabled = false;
+
+  grid.innerHTML = bank.map(item => `
+    <div class="bank-card" role="listitem">
+      <div class="bc-head">
+        <div>
+          <div class="bc-name">${escHtml(item.name)}</div>
+          <div class="bc-meta">Lagret ${item.dato}${item.fag ? ' · ' + (FAG[item.fag]?.navn || item.fag) : ''}${item.trinn ? ' · ' + item.trinn : ''}</div>
+        </div>
+      </div>
+      <div class="bc-prompt" id="bp-${item.id}">${escHtml(item.prompt)}</div>
+      <div class="pc-toggle-row" id="bt-${item.id}" style="display:none">
+        <button class="pc-toggle" onclick="toggleBankPrompt('bp-${item.id}','bt-${item.id}')" aria-expanded="false" aria-controls="bp-${item.id}">
+          <span class="pc-toggle-lbl">Vis hele prompten</span>
+          <svg viewBox="0 0 10 10"><path d="M2 3.5l3 3 3-3"/></svg>
+        </button>
+      </div>
+      <div class="bc-foot">
+        <button class="copy-btn" id="bcb-${item.id}" onclick="doCopy('bp-${item.id}','bcb-${item.id}')" aria-label="Kopiér prompt: ${escHtml(item.name)}">Kopiér</button>
+        <button class="copilot-btn" onclick="openCopilot('bp-${item.id}')" aria-label="Kopier og åpne Copilot">
+          <svg viewBox="0 0 11 11"><path d="M8 1H10V3"/><path d="M5.5 5.5L10 1"/><path d="M5 2H2a1 1 0 00-1 1v6a1 1 0 001 1h6a1 1 0 001-1V6"/></svg>Copilot
+        </button>
+        <button class="btn sm" style="border-color:var(--blue-hi);background:var(--blue-bg);color:var(--blue)" onclick="downloadOne(${item.id})" aria-label="Last ned som .txt">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5.5 1v6M3 5l2.5 2.5L8 5"/><path d="M1 9v.5a.5.5 0 00.5.5h8a.5.5 0 00.5-.5V9"/></svg>
+          .txt
+        </button>
+        <button class="btn sm" onclick="openEditModal(${item.id})" style="margin-left:.25rem" aria-label="Rediger prompt">Rediger</button>
+        <button class="btn sm danger" onclick="deleteItem(${item.id})" style="margin-left:.25rem" aria-label="Slett prompt: ${escHtml(item.name)}">Slett</button>
+      </div>
+    </div>`).join('');
+
+  // Måle hvilke prompter som overflyter, og aktiver "Vis mer"-knappen
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.bc-prompt').forEach(el => {
+      if (el.classList.contains('expanded')) return;
+      const id = el.id.replace('bp-', 'bt-');
+      const row = document.getElementById(id);
+      if (!row) return;
+      if (el.scrollHeight > el.clientHeight + 2) {
+        el.classList.add('clamped');
+        row.style.display = '';
+      } else {
+        el.classList.remove('clamped');
+        row.style.display = 'none';
+      }
+    });
+  });
+}
+
+function toggleBankPrompt(pid, tid) {
+  const el = document.getElementById(pid);
+  const row = document.getElementById(tid);
+  const btn = row.querySelector('.pc-toggle');
+  const lbl = btn.querySelector('.pc-toggle-lbl');
+  const isOpen = el.classList.toggle('expanded');
+  btn.classList.toggle('is-open', isOpen);
+  btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  lbl.textContent = isOpen ? 'Vis mindre' : 'Vis hele prompten';
+  if (isOpen) el.classList.remove('clamped');
+  else el.classList.add('clamped');
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function doCopy(pid, bid) {
+  const el = document.getElementById(pid);
+  const t = el ? el.textContent : '';
+  const b = document.getElementById(bid);
+  const go = () => { b.textContent = 'Kopiert!'; b.classList.add('ok'); setTimeout(() => { b.textContent = 'Kopiér'; b.classList.remove('ok'); }, 2200); };
+  navigator.clipboard.writeText(t).then(go).catch(() => { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); go(); });
+}
+function openCopilot(pid) {
+  const t = document.getElementById(pid).textContent;
+  navigator.clipboard.writeText(t).catch(() => {});
+  window.open(CONFIG.copilotUrl, '_blank', 'noopener');
+}
+function downloadOne(id) {
+  const bank = getBank();
+  const item = bank.find(i => i.id === id);
+  if (!item) return;
+  const safeName = item.name.replace(/[^a-zA-Z0-9æøåÆØÅ\s\-]/g, '').replace(/\s+/g, '-').substring(0, 50);
+  const blob = new Blob([item.prompt], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = `ki-prompt-${safeName}.txt`; a.click();
+  URL.revokeObjectURL(url);
+}
+function exportAllTxt() {
+  const bank = getBank();
+  if (!bank.length) return;
+  const content = bank.map((item, i) =>
+    `${'='.repeat(60)}\n${i + 1}. ${item.name}\nLagret: ${item.dato}\n${'='.repeat(60)}\n\n${item.prompt}\n\n`
+  ).join('\n');
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const dato = new Date().toISOString().slice(0, 10);
+  const a = document.createElement('a'); a.href = url; a.download = `ki-prompt-bank-${dato}.txt`; a.click();
+  URL.revokeObjectURL(url);
+}
+function deleteItem(id) {
+  if (!confirm('Slett denne prompten?')) return;
+  const bank = getBank().filter(i => i.id !== id);
+  saveBank(bank); renderBank();
+}
+function confirmClearAll() { document.getElementById('clear-modal').classList.add('open'); }
+function closeClearModal() { document.getElementById('clear-modal').classList.remove('open'); }
+function clearAll() { localStorage.removeItem('ki-bank'); closeClearModal(); renderBank(); }
+
+function openEditModal(id) {
+  const bank = getBank();
+  const item = bank.find(i => i.id === id);
+  if (!item) return;
+  editingId = id;
+  document.getElementById('edit-name').value = item.name;
+  document.getElementById('edit-prompt').value = item.prompt;
+  document.getElementById('edit-modal').classList.add('open');
+  setTimeout(() => document.getElementById('edit-name').focus(), 50);
+}
+function closeEditModal() { document.getElementById('edit-modal').classList.remove('open'); editingId = null; }
+function saveEdit() {
+  const name = document.getElementById('edit-name').value.trim();
+  const prompt = document.getElementById('edit-prompt').value.trim();
+  if (!name || !prompt) return;
+  const bank = getBank();
+  const idx = bank.findIndex(i => i.id === editingId);
+  if (idx !== -1) { bank[idx].name = name; bank[idx].prompt = prompt; saveBank(bank); }
+  closeEditModal(); renderBank();
+}
+
+function updateBankBadge(count) {
+  const badge = document.getElementById('bank-badge');
+  if (count > 0) { badge.textContent = count; badge.style.display = 'flex'; }
+  else badge.style.display = 'none';
+}
+
+document.getElementById('clear-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeClearModal(); });
+document.getElementById('edit-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeEditModal(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('edit-modal').classList.contains('open')) closeEditModal();
+    else if (document.getElementById('clear-modal').classList.contains('open')) closeClearModal();
+  }
+});
+
+renderBank();
+</script>
+</body>
+</html>
