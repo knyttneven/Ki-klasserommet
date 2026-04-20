@@ -35,13 +35,17 @@
   --shadow:    0 4px 24px rgba(20,40,80,.08);
 }
 
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
 body {
   font-family: system-ui, -apple-system, sans-serif;
   background: #eef2f7;
   color: var(--ink);
   font-size: 15px;
   line-height: 1.55;
-  min-height: 100vh;
 }
 
 button { cursor: pointer; font-family: inherit; }
@@ -60,7 +64,7 @@ a { color: var(--blue); }
   border-radius: 20px;
   overflow: hidden;
   box-shadow: var(--shadow);
-  min-height: 100vh;
+  height: 100%;
 }
 
 /* ── TOPBAR ── */
