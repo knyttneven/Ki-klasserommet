@@ -129,7 +129,7 @@
       <!-- PIN-visning -->
       <div id="kg-admin-pin-view" class="kg-pin-view" data-protonpass-form="">
         <p>Skriv inn admin-PIN for å redigere tips, legge til bilder eller endre kategorier.</p>
-        <input id="kg-admin-pin" type="password" inputmode="numeric" maxlength="8" placeholder="••••" autocomplete="off">
+        <input id="kg-admin-pin" type="password" inputmode="numeric" maxlength="8" placeholder="••••" autocomplete="off" onkeydown="if(event.key==='Enter') tryUnlockAdmin()">
         <div class="kg-pin-err" id="kg-admin-pin-err" aria-live="polite"></div>
         <button class="btn primary" onclick="tryUnlockAdmin()" style="width:100%">Lås opp</button>
         <p class="kg-pin-hint">PIN kreves for å endre innhold.</p>
