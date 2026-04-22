@@ -328,6 +328,7 @@ function renderAdminList() {
           </div>
         </div>`).join('')}
     </div>
+    ${renderGhPanel()}
   `;
 }
 
@@ -659,4 +660,147 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('kg-admin-pin')?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') tryUnlockAdmin();
   });
+
+  // Triple-klikk på logo åpner admin (skjult trigger)
+  let kgTapCount = 0, kgTapTimer;
+  document.getElementById('kg-logo-tap')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    kgTapCount++;
+    clearTimeout(kgTapTimer);
+    kgTapTimer = setTimeout(() => {
+      if (kgTapCount === 1) window.location.href = 'index.html';
+      kgTapCount = 0;
+    }, 400);
+    if (kgTapCount >= 3) { kgTapCount = 0; clearTimeout(kgTapTimer); openAdmin(); }
+  });
 });
+
+// ============================================================
+//  GITHUB API — publiser kompasset-data.js direkte til repo
+// ============================================================
+
+const GH_TOKEN_KEY = 'kg_gh_token';
+const GH_REPO_KEY  = 'kg_gh_repo';   // format: "eier/repo-navn"
+
+function ghGetSettings() {
+  return {
+    token: sessionStorage.getItem(GH_TOKEN_KEY) || '',
+    repo:  localStorage.getItem(GH_REPO_KEY) || ''
+  };
+}
+function ghSaveSettings(token, repo) {
+  sessionStorage.setItem(GH_TOKEN_KEY, token);
+  localStorage.setItem(GH_REPO_KEY, repo);
+}
+
+function renderGhPanel() {
+  const { token, repo } = ghGetSettings();
+  return `
+    <div class="ka-field" style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--line)">
+      <label style="font-weight:700">📡 Publiser til GitHub</label>
+      <p style="font-size:12px;color:var(--ink3);margin:.25rem 0 .75rem">
+        Lagre token én gang per økt — publisering skriver kompasset-data.js direkte til repoet ditt.
+      </p>
+      <div class="ka-field-row">
+        <div class="ka-field">
+          <label>Repo (eier/navn)</label>
+          <input id="gh-repo" type="text" placeholder="brukernavn/repo-navn" value="${esc(repo)}">
+        </div>
+        <div class="ka-field">
+          <label>GitHub Token (PAT)</label>
+          <input id="gh-token" type="password" placeholder="github_pat_…" value="${esc(token)}">
+        </div>
+      </div>
+      <div style="display:flex;gap:.5rem;align-items:center;margin-top:.5rem">
+        <button class="btn primary" onclick="ghPublish()">⬆ Publiser til GitHub</button>
+        <span id="gh-msg" style="font-size:12px;color:var(--ink3)"></span>
+      </div>
+      <p style="font-size:11px;color:var(--ink3);margin-top:.5rem">
+        Token trenger kun <code>Contents: Read and Write</code>-tilgang (Fine-grained PAT). Lagres kun i denne fanen.
+      </p>
+    </div>
+  `;
+}
+
+async function ghPublish() {
+  const token = document.getElementById('gh-token').value.trim();
+  const repo  = document.getElementById('gh-repo').value.trim();
+  const msg   = document.getElementById('gh-msg');
+
+  if (!token || !repo) { msg.textContent = 'Fyll inn repo og token.'; return; }
+  ghSaveSettings(token, repo);
+
+  msg.textContent = 'Henter gjeldende fil…';
+
+  const filePath = 'kompasset-data.js';
+  const apiBase  = `https://api.github.com/repos/${repo}/contents/${filePath}`;
+  const headers  = { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
+
+  try {
+    // 1. Hent SHA til eksisterende fil
+    const getRes = await fetch(apiBase, { headers });
+    if (!getRes.ok) throw new Error(`Kunne ikke hente fil: ${getRes.status} ${getRes.statusText}`);
+    const getJson = await getRes.json();
+    const sha = getJson.sha;
+
+    // 2. Bygg ny filinnhold
+    const o = loadOverlay();
+    const allT = allTips();
+    const newContent = buildDataJs(allT);
+    const encoded = btoa(unescape(encodeURIComponent(newContent)));
+
+    msg.textContent = 'Publiserer…';
+
+    // 3. PUT ny versjon
+    const putRes = await fetch(apiBase, {
+      method: 'PUT',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: 'Oppdater kompasset-data.js via admin-panel',
+        content: encoded,
+        sha
+      })
+    });
+    if (!putRes.ok) {
+      const err = await putRes.json();
+      throw new Error(err.message || putRes.statusText);
+    }
+
+    // 4. Tøm overlay — data lever nå i filen
+    saveOverlay({ tips: [], slettet: [], endret: {} });
+    render();
+    msg.textContent = '✓ Publisert! GitHub Pages oppdateres om ~1 min.';
+    msg.style.color = 'var(--green)';
+    setTimeout(() => { msg.textContent = ''; msg.style.color = ''; }, 6000);
+
+  } catch (e) {
+    msg.textContent = '✗ Feil: ' + e.message;
+    msg.style.color = 'var(--red, #c04040)';
+  }
+}
+
+function buildDataJs(tips) {
+  const kategorier = JSON.stringify(
+    [
+      { id: "kom-i-gang",  navn: "Kom i gang",      ikon: "📍", beskr: "Start her — 2-min omvisning gjennom nettsiden." },
+      { id: "prompt-tips", navn: "Prompt-tips",     ikon: "💡", beskr: "Rolle, kontekst, rammer — slik skriver du gode prompts." },
+      { id: "pedagogikk",  navn: "Pedagogiske råd", ikon: "🎓", beskr: "KI som sparringspartner — ikke erstatter for læreren." },
+      { id: "teknisk",     navn: "Tekniske tips",   ikon: "⚙️", beskr: "Copilot-innstillinger, snarveier og feilsøking." },
+      { id: "personvern",  navn: "Personvern",      ikon: "🔒", beskr: "Hva du kan og ikke kan lime inn i Copilot." },
+      { id: "ordliste",    navn: "Begreper",        ikon: "📚", beskr: "Prompt, hallusinasjon, token — ordliste for lærere." },
+      { id: "video",       navn: "Videoguider",     ikon: "🎬", beskr: "Korte skjermopptak av veiviseren og kortene." },
+      { id: "faq",         navn: "FAQ",             ikon: "❓", beskr: "Svar på det kollegene ofte spør om." }
+    ], null, 2);
+
+  const tipsJson = JSON.stringify(tips, null, 2);
+
+  return `// ============================================================
+//  KOMPASSET — Startdata for tips og instruksjoner
+//  Generert automatisk av admin-panel ${new Date().toISOString().slice(0,10)}
+// ============================================================
+
+const KOMPASS_KATEGORIER = ${kategorier};
+
+const KOMPASS_TIPS = ${tipsJson};
+`;
+}

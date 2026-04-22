@@ -677,14 +677,6 @@ const ISLANDS = [
 
 const ADMIN_PIN = CONFIG.ADMIN_PIN;
 
-const CONFIG = {
-  siteName: "KI i klasserommet",
-  siteSubtitle: "Praktiske prompt-kort for lærere i videregående",
-  fogUnlockAt: 3,
-  copilotUrl: "https://copilot.microsoft.com",
-  kontakt: ""
-};
-
 /*
 ──────────────────────────────────────────────
   MAL FOR NYTT KORT

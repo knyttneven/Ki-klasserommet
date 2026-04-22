@@ -16,7 +16,7 @@
 
   <!-- TOPBAR -->
   <div class="topbar" role="banner">
-    <a href="index.html" class="tb-logo">KI<em> i klasserommet</em></a>
+    <a href="index.html" class="tb-logo" id="kg-logo-tap" title="KI i klasserommet">KI<em> i klasserommet</em></a>
     <nav class="tb-nav" role="navigation" aria-label="Hovednavigasjon">
       <a href="index.html">Kurskartet</a>
       <a href="veiviser.html">Veiviseren</a>
@@ -115,14 +115,7 @@
 
 </div>
 
-<!-- Admin-FAB (synlig for alle, men krever PIN for å redigere) -->
-<button class="kg-admin-fab" onclick="openAdmin()" aria-label="Åpne admin-panel for Kompasset">
-  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8">
-    <circle cx="6" cy="6" r="1.6"></circle>
-    <path d="M6 1v1.5M6 9.5V11M11 6h-1.5M2.5 6H1M9.54 2.46l-1.06 1.06M3.52 8.48l-1.06 1.06M9.54 9.54l-1.06-1.06M3.52 3.52l-1.06-1.06"></path>
-  </svg>
-  Admin
-</button>
+<!-- Admin: skjult — åpnes med triple-klikk på logoen -->
 
 <!-- ADMIN-MODAL -->
 <div class="kg-admin-modal" id="kg-admin-modal" role="dialog" aria-modal="true" aria-labelledby="kg-admin-title">
@@ -134,79 +127,17 @@
     <div class="kg-admin-body">
 
       <!-- PIN-visning -->
-      <div id="kg-admin-pin-view" class="kg-pin-view" data-protonpass-form="" style="display: none;">
+      <div id="kg-admin-pin-view" class="kg-pin-view" data-protonpass-form="">
         <p>Skriv inn admin-PIN for å redigere tips, legge til bilder eller endre kategorier.</p>
         <input id="kg-admin-pin" type="password" inputmode="numeric" maxlength="8" placeholder="••••" autocomplete="off">
         <div class="kg-pin-err" id="kg-admin-pin-err" aria-live="polite"></div>
         <button class="btn primary" onclick="tryUnlockAdmin()" style="width:100%">Lås opp</button>
-        <p class="kg-pin-hint">Alle kan lese Kompasset — PIN kreves kun for å endre innhold.</p>
+        <p class="kg-pin-hint">PIN kreves for å endre innhold.</p>
       </div>
 
-      <!-- Admin-panel -->
-      <div id="kg-admin-panel" style="">
-        <div id="kg-admin-list" data-edit-id="tip-1776684648848">
-    <div class="ka-edit" data-protonpass-form="">
-      <button class="btn ghost sm" onclick="renderAdminList()">‹ Tilbake til oversikt</button>
-
-      <div class="ka-field">
-        <label>Tittel</label>
-        <input id="ka-tittel" type="text" value="Nytt tips">
-      </div>
-
-      <div class="ka-field-row">
-        <div class="ka-field">
-          <label>Kategori</label>
-          <select id="ka-kategori"><option value="kom-i-gang" selected="">📍 Kom i gang</option><option value="prompt-tips">💡 Prompt-tips</option><option value="pedagogikk">🎓 Pedagogiske råd</option><option value="teknisk">⚙️ Tekniske tips</option><option value="personvern">🔒 Personvern</option><option value="ordliste">📚 Begreper</option><option value="video">🎬 Videoguider</option><option value="faq">❓ FAQ</option></select>
-        </div>
-        <div class="ka-field" style="max-width:120px">
-          <label>Lesetid (min)</label>
-          <input id="ka-minutter" type="number" min="1" max="60" value="2">
-        </div>
-        <div class="ka-field" style="max-width:160px">
-          <label>Oppdatert</label>
-          <input id="ka-oppdatert" type="date" value="2026-04-20">
-        </div>
-      </div>
-
-      <div class="ka-field">
-        <label>Ingress (kort teaser-tekst)</label>
-        <textarea id="ka-ingress" rows="2"></textarea>
-      </div>
-
-      <div class="ka-field">
-        <label>Innhold — blokker</label>
-        <div id="ka-blokker">
-    <div class="ka-blokk" data-i="0" data-type="p">
-      <div class="ka-blokk-head">
-        <span class="ka-blokk-type">Avsnitt</span>
-        <div class="ka-blokk-actions">
-          <button class="btn ghost sm" onclick="adminMoveBlock(0, -1)" title="Flytt opp">↑</button>
-          <button class="btn ghost sm" onclick="adminMoveBlock(0, +1)" title="Flytt ned">↓</button>
-          <button class="btn ghost sm" onclick="adminRemoveBlock(0)" title="Fjern">×</button>
-        </div>
-      </div>
-      <div class="ka-blokk-body"><textarea data-k="tekst" rows="3"></textarea></div>
-    </div>
-  </div>
-        <div class="ka-add-blokk">
-          <span>Legg til blokk:</span>
-          <button class="btn ghost sm" onclick="adminAddBlock('p')">+ Avsnitt</button>
-          <button class="btn ghost sm" onclick="adminAddBlock('h2')">+ Mellomtittel</button>
-          <button class="btn ghost sm" onclick="adminAddBlock('liste')">+ Liste</button>
-          <button class="btn ghost sm" onclick="adminAddBlock('tips')">+ Tips-boks</button>
-          <button class="btn ghost sm" onclick="adminAddBlock('kode')">+ Kode/prompt</button>
-          <button class="btn ghost sm" onclick="adminAddBlock('bilde')">+ Bilde</button>
-          <button class="btn ghost sm" onclick="adminAddBlock('video')">+ Video</button>
-          <button class="btn ghost sm" onclick="adminAddBlock('lenke')">+ Lenke</button>
-        </div>
-      </div>
-
-      <div class="ka-save-row">
-        <button class="btn primary" onclick="adminSave('tip-1776684648848')">Lagre endringer</button>
-        <span id="ka-save-msg" class="ka-save-msg"></span>
-      </div>
-    </div>
-  </div>
+      <!-- Admin-panel (fylles av JS) -->
+      <div id="kg-admin-panel" style="display:none">
+        <div id="kg-admin-list"></div>
       </div>
 
     </div>
