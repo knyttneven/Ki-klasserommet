@@ -749,7 +749,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     kgTapCount++;
     clearTimeout(kgTapTimer);
     kgTapTimer = setTimeout(() => {
-      if (kgTapCount === 1) window.location.href = 'index.html';
+      if (kgTapCount === 1) window.location.href = './index.html';
       kgTapCount = 0;
     }, 400);
     if (kgTapCount >= 3) { kgTapCount = 0; clearTimeout(kgTapTimer); openAdmin(); }
