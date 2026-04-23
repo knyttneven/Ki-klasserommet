@@ -7,6 +7,8 @@ export const CONFIG = {
   kontakt: "",
 
   // Supabase feature flags — all disabled until explicitly activated
+  adminDeleteUrl: "", // URL to deployed backend/admin-delete.js endpoint
+
   supabase: {
     enableRead: false,       // D1.2: les brukerdata fra Supabase
     enableWrite: false,      // D1.3: skriv brukerdata til Supabase

@@ -416,6 +416,7 @@ let activeIsland = null;
 let tapCount = 0, tapTimer = null;
 let pendingSavePrompt = null, pendingSaveId = null;
 let adminUnlocked = false;
+const adminMode = new URLSearchParams(location.search).get('admin') === '1';
 
 function saveState() { localStorage.setItem('ki-state', JSON.stringify(state)); }
 
@@ -563,6 +564,7 @@ function renderCard(c, isl, wizUnlocked, remaining) {
         <input type="checkbox" ${done ? 'checked' : ''} onchange="tickDone('${c.id}',${isl.id},this.checked)" aria-label="Merk som fullført">
         Ferdig
       </label>
+      ${adminMode ? `<button class="btn ghost sm" style="color:var(--red,#c04040);font-size:11px" onclick="window.deleteKurskartCard('${c.id}')">&#128465;</button>` : ''}
     </div>
     ${tags ? `<div style="padding:.3rem .875rem .5rem;display:flex;gap:.3rem;flex-wrap:wrap">${tags}</div>` : ''}
   </div>`;
@@ -878,6 +880,29 @@ init();
   }
 
   // ── WRITE ──
+  // ── ADMIN DELETE ──
+  const adminMode = new URLSearchParams(location.search).get('admin') === '1';
+  let adminSecret = null;
+
+  async function deleteKurskartCard(id) {
+    if (!adminSecret) {
+      adminSecret = prompt('Admin-passord:');
+      if (!adminSecret) return;
+    }
+    if (!confirm('Slett dette kortet permanent?')) return;
+    try {
+      const res = await fetch(CONFIG.adminDeleteUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret: adminSecret, table: 'kurskart_cards', id })
+      });
+      if (res.status === 401) { adminSecret = null; alert('Feil passord.'); return; }
+      if (!res.ok) { alert('Feil: ' + res.status); return; }
+      await fetchKurskartCards();
+    } catch (e) { alert('Nettverksfeil.'); }
+  }
+  window.deleteKurskartCard = deleteKurskartCard;
+
   if (CONFIG.supabase.enableWrite) {
     window.writeKurskartCard = async (card) => {
       try {

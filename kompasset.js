@@ -46,6 +46,8 @@ let currentTipsId = null;
 let adminOn = false;
 let searchQ = '';
 let supabaseTips = [];
+const adminMode = new URLSearchParams(location.search).get('admin') === '1';
+let adminSecret = null;
 
 // ---------- HELPERS ----------
 function esc(s) {
@@ -204,6 +206,7 @@ function renderTips(id) {
 
       <div class="art-foot">
         <button class="btn ghost sm" data-action="kat" data-id="${t.kategori}">\u2039 Tilbake til ${esc(kat ? kat.navn : '')}</button>
+        ${adminMode ? `<button class="btn ghost sm" style="color:var(--red,#c04040);margin-left:auto" data-action="delete-tip" data-id="${t.id}">&#128465; Slett tips</button>` : ''}
       </div>
     </article>
   `;
@@ -253,6 +256,8 @@ function bindKompassHandlers(root) {
     el.addEventListener('click', () => goHome()));
   const search = root.querySelector('#kg-search');
   if (search) search.addEventListener('input', e => onSearch(e.target.value));
+  root.querySelectorAll('[data-action="delete-tip"]').forEach(el =>
+    el.addEventListener('click', () => deleteKompassTip(el.dataset.id)));
 }
 
 // ---------- NAVIGASJON ----------
@@ -683,6 +688,26 @@ function adminImport(file) {
     }
   };
   reader.readAsText(file);
+}
+
+// ---------- ADMIN DELETE ----------
+async function deleteKompassTip(id) {
+  if (!adminSecret) {
+    adminSecret = prompt('Admin-passord:');
+    if (!adminSecret) return;
+  }
+  if (!confirm('Slett dette tipset permanent?')) return;
+  try {
+    const res = await fetch(CONFIG.adminDeleteUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret: adminSecret, table: 'kompass_tips', id })
+    });
+    if (res.status === 401) { adminSecret = null; alert('Feil passord.'); return; }
+    if (!res.ok) { alert('Feil: ' + res.status); return; }
+    await fetchSupabaseTips();
+    render();
+  } catch (e) { alert('Nettverksfeil.'); }
 }
 
 // ---------- SUPABASE READ ----------
