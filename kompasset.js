@@ -67,7 +67,7 @@ function renderHjem() {
   const grid = KOMPASS_KATEGORIER.map(k => {
     const antall = tipsByKategori(k.id).length;
     return `
-      <button class="kg-card" data-kat="${k.id}" onclick="openKategori('${k.id}')">
+      <button class="kg-card" data-kat="${k.id}">
         <div class="kg-ic">${k.ikon}</div>
         <div class="kg-title">${esc(k.navn)}</div>
         <div class="kg-desc">${esc(k.beskr)}</div>
@@ -84,7 +84,7 @@ function renderHjem() {
         <div class="kg-featured-title">${esc(forstetips.tittel)}</div>
         <div class="kg-featured-desc">${esc(forstetips.ingress)}</div>
       </div>
-      <button class="btn primary sm" onclick="openTips('${forstetips.id}')">Les &rarr;</button>
+      <button class="btn primary sm" data-action="tips" data-id="${forstetips.id}">Les &rarr;</button>
     </div>` : '';
 
   return `
@@ -98,7 +98,7 @@ function renderHjem() {
           <path d="M11 11 l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
         </svg>
         <input id="kg-search" type="search" placeholder="Søk i tips og instruksjoner…"
-               value="${esc(searchQ)}" oninput="onSearch(this.value)">
+               value="${esc(searchQ)}">
       </div>
     </div>
 
@@ -118,7 +118,7 @@ function renderKategori(kid) {
   const liste = tips.length === 0
     ? `<div class="kg-empty">Ingen tips i denne kategorien ennå.</div>`
     : tips.map(t => `
-        <button class="kg-tips-row" onclick="openTips('${t.id}')">
+        <button class="kg-tips-row" data-action="tips" data-id="${t.id}">
           <div class="kg-tips-ic">${iconFor(t.kategori)}</div>
           <div class="kg-tips-body">
             <div class="kg-tips-tittel">${esc(t.tittel)}</div>
@@ -135,7 +135,7 @@ function renderKategori(kid) {
 
   return `
     <div class="kg-breadcrumb">
-      <a onclick="goHome()">Kompasset</a>
+      <a data-action="home">Kompasset</a>
       <span>›</span>
       <span>${esc(kat.navn)}</span>
     </div>
@@ -182,9 +182,9 @@ function renderTips(id) {
 
   return `
     <div class="kg-breadcrumb">
-      <a onclick="goHome()">Kompasset</a>
+      <a data-action="home">Kompasset</a>
       <span>›</span>
-      <a onclick="openKategori('${t.kategori}')">${esc(kat ? kat.navn : '')}</a>
+      <a data-action="kat" data-id="${t.kategori}">${esc(kat ? kat.navn : '')}</a>
       <span>›</span>
       <span>${esc(t.tittel)}</span>
     </div>
@@ -203,7 +203,7 @@ function renderTips(id) {
       <div class="art-body">${blokker}</div>
 
       <div class="art-foot">
-        <button class="btn ghost sm" onclick="openKategori('${t.kategori}')">\u2039 Tilbake til ${esc(kat ? kat.navn : '')}</button>
+        <button class="btn ghost sm" data-action="kat" data-id="${t.kategori}">\u2039 Tilbake til ${esc(kat ? kat.navn : '')}</button>
       </div>
     </article>
   `;
@@ -220,7 +220,7 @@ function renderSearch(q) {
   const liste = hits.length === 0
     ? `<div class="kg-empty">Ingen treff på «${esc(q)}». Prøv et annet ord.</div>`
     : hits.map(t => `
-        <button class="kg-tips-row" onclick="openTips('${t.id}')">
+        <button class="kg-tips-row" data-action="tips" data-id="${t.id}">
           <div class="kg-tips-ic">${iconFor(t.kategori)}</div>
           <div class="kg-tips-body">
             <div class="kg-tips-tittel">${esc(t.tittel)}</div>
@@ -232,13 +232,27 @@ function renderSearch(q) {
 
   return `
     <div class="kg-breadcrumb">
-      <a onclick="goHome()">Kompasset</a>
+      <a data-action="home">Kompasset</a>
       <span>›</span>
       <span>Søk: «${esc(q)}»</span>
     </div>
     <h1 class="kg-search-title">${hits.length} treff på «${esc(q)}»</h1>
     <div class="kg-tips-list">${liste}</div>
   `;
+}
+
+// ---------- CLICK BINDING ----------
+function bindKompassHandlers(root) {
+  root.querySelectorAll('.kg-card[data-kat]').forEach(el =>
+    el.addEventListener('click', () => openKategori(el.dataset.kat)));
+  root.querySelectorAll('[data-action="kat"]').forEach(el =>
+    el.addEventListener('click', () => openKategori(el.dataset.id)));
+  root.querySelectorAll('[data-action="tips"]').forEach(el =>
+    el.addEventListener('click', () => openTips(el.dataset.id)));
+  root.querySelectorAll('[data-action="home"]').forEach(el =>
+    el.addEventListener('click', () => goHome()));
+  const search = root.querySelector('#kg-search');
+  if (search) search.addEventListener('input', e => onSearch(e.target.value));
 }
 
 // ---------- NAVIGASJON ----------
@@ -253,6 +267,7 @@ function render() {
   } else {
     root.innerHTML = renderHjem();
   }
+  bindKompassHandlers(root);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -691,15 +706,6 @@ async function fetchSupabaseTips() {
 document.addEventListener('DOMContentLoaded', async () => {
   if (CONFIG.supabase.enableRead) await fetchSupabaseTips();
   render();
-
-  // Expose navigation + admin functions to global scope (required for inline onclick handlers in module context)
-  Object.assign(window, {
-    goHome, openKategori, openTips, onSearch,
-    openAdmin, closeAdmin, tryUnlockAdmin, showAdminPanel,
-    renderAdminList, adminNew, adminDelete, adminEdit,
-    adminSave, adminAddBlock, adminRemoveBlock, adminMoveBlock,
-    adminUploadImage, adminExport, adminImport, ghPublish
-  });
 
   // ESC lukker admin
   document.addEventListener('keydown', (e) => {
