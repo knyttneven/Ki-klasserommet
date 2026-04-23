@@ -419,6 +419,15 @@ let adminUnlocked = false;
 
 function saveState() { localStorage.setItem('ki-state', JSON.stringify(state)); }
 
+// ── PSEUDO-ID + PROGRESSION BRIDGE ──
+window.getProgressId = () => {
+  let id = localStorage.getItem('ki-progress-id');
+  if (!id) { id = crypto.randomUUID(); localStorage.setItem('ki-progress-id', id); }
+  return id;
+};
+window.getIslandsDone = () => state.islandsDone;
+window.applyIslandsDone = (ids) => { ids.forEach(id => { state.islandsDone[id] = true; }); recalcProgress(); };
+
 // ── INIT ──
 function init() {
   if (CONFIG.kontakt) document.getElementById('footer-kontakt').textContent = CONFIG.kontakt;
@@ -571,10 +580,13 @@ function tickDone(cardId, islId, checked) {
 
 function recalcProgress() {
   let done = 0;
+  let newUnlock = false;
   ISLANDS.forEach(isl => {
     const simplCards = isl.cards.filter(c => c.type === 'simple');
+    const wasDone = !!state.islandsDone[isl.id];
     if (simplCards.length > 0 && simplCards.every(c => state.completed[c.id])) {
       state.islandsDone[isl.id] = true;
+      if (!wasDone) newUnlock = true;
       done++;
     } else {
       state.islandsDone[isl.id] = false;
@@ -598,6 +610,7 @@ function recalcProgress() {
   }
 
   updateMapVisuals();
+  if (newUnlock && typeof window.onIslandUnlocked === 'function') window.onIslandUnlocked();
 }
 
 // Colour palettes per island for done/active/open states
@@ -826,6 +839,35 @@ init();
   }
 
   if (CONFIG.supabase.enableRead) fetchKurskartCards();
+
+  // ── PROGRESSION ──
+  async function loadProgression() {
+    try {
+      const { data } = await supabase
+        .from('kurs_progresjon')
+        .select('unlocked_islands')
+        .eq('progress_id', window.getProgressId())
+        .maybeSingle();
+      if (data?.unlocked_islands?.length) window.applyIslandsDone(data.unlocked_islands);
+    } catch (e) { /* fallback: local state used as-is */ }
+  }
+
+  async function saveProgression() {
+    try {
+      const unlocked = Object.entries(window.getIslandsDone())
+        .filter(([, v]) => v)
+        .map(([k]) => Number(k));
+      await supabase.from('kurs_progresjon').upsert(
+        { progress_id: window.getProgressId(), unlocked_islands: unlocked, updated_at: new Date().toISOString() },
+        { onConflict: 'progress_id' }
+      );
+    } catch (e) { /* silent fallback */ }
+  }
+
+  if (CONFIG.supabase.enableProgression) {
+    loadProgression();
+    window.onIslandUnlocked = saveProgression;
+  }
 </script>
 </body>
 </html>
