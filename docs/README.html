@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>README – KI i klasserommet</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 14px; color: #24292f; background: #f6f8fa; }
+  .page { max-width: 800px; margin: 0 auto; padding: 40px 48px 60px; background: #fff; min-height: 100vh; }
+  h1 { font-size: 28px; font-weight: 700; color: #0f3460; border-bottom: 2px solid #e8ecf5; padding-bottom: 12px; margin-bottom: 6px; }
+  .tagline { font-size: 15px; color: #555; margin-bottom: 28px; margin-top: 4px; }
+  h2 { font-size: 18px; font-weight: 700; color: #0f3460; border-bottom: 1px solid #e8ecf5; padding-bottom: 6px; margin: 32px 0 12px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 16px 0 6px; }
+  p { line-height: 1.7; margin-bottom: 10px; color: #333; }
+  ul, ol { padding-left: 22px; margin-bottom: 10px; }
+  li { line-height: 1.7; margin-bottom: 3px; color: #333; }
+  code { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12.5px; background: #f0f4ff; border: 1px solid #d0d8f0; padding: 1px 5px; border-radius: 3px; }
+  pre { background: #1e2235; color: #c5d0f0; font-family: Consolas, monospace; font-size: 12px; padding: 14px 16px; border-radius: 6px; overflow-x: auto; margin: 10px 0 14px; line-height: 1.6; }
+  a { color: #1565c0; }
+  .callout { border-left: 4px solid #2196f3; background: #e3f2fd; padding: 10px 14px; border-radius: 0 6px 6px 0; margin: 12px 0; font-size: 13px; }
+  .callout.warn { border-color: #ff9800; background: #fff8e1; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 16px; font-size: 13px; }
+  th { background: #0f3460; color: #fff; padding: 8px 12px; text-align: left; font-weight: 600; }
+  td { padding: 7px 12px; border-bottom: 1px solid #e8ecf5; vertical-align: top; }
+  tr:nth-child(even) td { background: #f6f8fd; }
+  hr { border: none; border-top: 1px solid #e8ecf5; margin: 28px 0; }
+  @media print { body { background:#fff; } .page { padding: 20px 30px; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>KI i klasserommet</h1>
+  <p class="tagline">A practical AI prompt tool for upper secondary school teachers in Norway, built around Microsoft Copilot.</p>
+
+  <hr>
+
+  <h2>About</h2>
+  <p><strong>KI i klasserommet</strong> ("AI in the Classroom") is a static web application that helps Norwegian upper secondary school teachers use Microsoft Copilot more effectively in planning and teaching. It provides ready-made prompt cards organized by topic, a curriculum-aligned prompt wizard, a personal prompt library, and a guidance portal.</p>
+
+  <p>The application requires no backend, no build process, and no dependencies. It runs entirely in the browser and can be hosted on GitHub Pages, a school web server, SharePoint, or any static file host.</p>
+
+  <h2>Features</h2>
+  <ul>
+    <li><strong>Kurskartet</strong> — an interactive island map with 6 thematic chapters, each containing prompt cards for teachers</li>
+    <li><strong>Veiviseren</strong> — a step-by-step wizard that generates a tailored Copilot prompt based on subject, year level, and pedagogical goal, with direct links to the Norwegian national curriculum (udir.no)</li>
+    <li><strong>Min bank</strong> — a personal prompt library stored locally in the browser, with export to <code>.txt</code></li>
+    <li><strong>Kompasset</strong> — a guidance portal with categorised tips, how-to guides, and video resources for teachers</li>
+    <li>PIN-protected admin panel for adding prompt cards and publishing content updates</li>
+    <li>Progress tracking with a "fog of war" unlock mechanic</li>
+    <li>Accessible (ARIA roles, keyboard navigation, skip links)</li>
+  </ul>
+
+  <h2>Tech stack</h2>
+  <table>
+    <tr><th>Layer</th><th>Technology</th></tr>
+    <tr><td>Markup</td><td>HTML5</td></tr>
+    <tr><td>Styling</td><td>CSS3 (custom properties, Grid, Flexbox — no preprocessor)</td></tr>
+    <tr><td>Logic</td><td>Vanilla JavaScript (ES2020+, no frameworks)</td></tr>
+    <tr><td>Data</td><td>Plain JS files (<code>data.js</code>, <code>kompasset-data.js</code>)</td></tr>
+    <tr><td>Storage</td><td>Browser <code>localStorage</code> / <code>sessionStorage</code></td></tr>
+    <tr><td>Hosting</td><td>GitHub Pages (or any static file server)</td></tr>
+    <tr><td>Build</td><td>None required</td></tr>
+  </table>
+
+  <h2>File overview</h2>
+  <pre>index.html          ← Kurskartet (start page / island map)
+veiviser.html       ← Veiviseren (prompt wizard)
+min-bank.html       ← Min bank (personal prompt library)
+kompasset.html      ← Kompasset (guidance portal, HTML shell)
+kompasset.js        ← All logic for Kompasset
+style.css           ← Shared styles
+kompasset.css       ← Kompasset-specific styles
+config.js           ← Site configuration (PIN, site name, Copilot URL)
+config.example.js   ← Configuration template — copy to config.js
+data.js             ← All content: islands, prompt cards, subjects, curriculum
+kompasset-data.js   ← Guidance content: categories and tip blocks</pre>
+
+  <h2>Configuration</h2>
+  <p>Copy <code>config.example.js</code> to <code>config.js</code> and edit the values:</p>
+  <pre>const CONFIG = {
+  ADMIN_PIN:    "your-pin",
+  fogUnlockAt:  3,
+  copilotUrl:   "https://copilot.microsoft.com",
+  siteName:     "KI i klasserommet",
+  siteSubtitle: "Praktiske prompt-kort for lærere i videregående",
+  kontakt:      ""
+};</pre>
+
+  <div class="callout warn">
+    Do not commit <code>config.js</code> with a real PIN to a public repository. <code>config.js</code> is listed in <code>.gitignore</code> by default.
+  </div>
+
+  <h2>Customising content</h2>
+
+  <h3>Prompt cards</h3>
+  <p>Edit <code>data.js</code>. Each card in <code>ISLANDS[n].cards</code> follows this structure:</p>
+  <pre>{
+  id:     "und-01",
+  title:  "Card title",
+  time:   "5 min",
+  out:    "What the teacher gets",
+  do:     "Instruction for the teacher",
+  prompt: "You are a teacher in [SUBJECT]…",
+  tags:   ["Vg1", "Norwegian"],
+  udir:   "NOR01-06"
+}</pre>
+
+  <h3>Guidance content (Kompasset)</h3>
+  <p>Edit <code>kompasset-data.js</code>, or use the in-app admin panel to add and edit tips without touching the source files. Tips support text, lists, code blocks, images (URL or base64), YouTube embeds, and links.</p>
+
+  <h3>Subjects and curriculum links</h3>
+  <p>Update the <code>FAG</code> array in <code>data.js</code> when Udir changes curriculum codes. Each entry holds the subject name, code, curriculum URL, and 2–4 sample competence goals.</p>
+
+  <h2>Admin panel</h2>
+  <p>Access by triple-clicking the site logo, or via the hidden Admin button. Requires the PIN set in <code>config.js</code>. Allows adding prompt cards, editing Kompasset content, and — when hosted on GitHub Pages — publishing <code>kompasset-data.js</code> directly to the repository via the GitHub API (requires a Personal Access Token with <code>contents:write</code> scope).</p>
+
+  <h2>Data &amp; privacy</h2>
+  <p>All user data (progress, saved prompts, admin edits) is stored exclusively in the user's browser via <code>localStorage</code>. No data is sent to any server. There is no user tracking, no cookies, and no analytics.</p>
+
+  <h2>Hosting on a school web server</h2>
+  <p>Copy all files to the server root. No build step, no server-side code, and no special configuration required beyond standard static file serving. HTTPS is recommended. The GitHub publishing feature in Kompasset is not needed and can be ignored when self-hosting.</p>
+
+  <h2>License</h2>
+  <p>Open source. See <code>LICENSE</code> for details.</p>
+
+  <hr>
+  <p style="font-size:12px;color:#888;">KI i klasserommet v3 &nbsp;·&nbsp; Built for Norwegian upper secondary schools &nbsp;·&nbsp; No frameworks, no build tools, no backend.</p>
+
+</div>
+</body>
+</html>

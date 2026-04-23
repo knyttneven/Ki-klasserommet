@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Designvarianter – Kompasset</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  body { background: #e8e4dc; padding: 2rem 1.5rem 4rem; }
+  .overview-wrap { max-width: 1400px; margin: 0 auto; }
+  .ov-head { text-align: center; margin-bottom: 2.5rem; }
+  .ov-head h1 { font-family: Georgia, serif; font-size: 1.8rem; color: var(--ink); letter-spacing: -.02em; margin-bottom: .4rem; }
+  .ov-head p { color: var(--ink3); font-size: 14px; max-width: 580px; margin: 0 auto; line-height: 1.55; }
+
+  .variant-grid { display: grid; grid-template-columns: 1fr; gap: 2.5rem; }
+
+  .variant {
+    background: var(--surface);
+    border: 1px solid var(--line2);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 2px 14px rgba(0,0,0,.06);
+  }
+  .variant-head {
+    padding: 1.25rem 1.75rem;
+    border-bottom: 1px solid var(--line);
+    background: #f8f4e8;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .variant-num {
+    font-family: Georgia, serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--amber);
+    background: var(--amber-bg);
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    border: 1px solid #e8c880;
+  }
+  .variant-name {
+    font-family: Georgia, serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -.01em;
+  }
+  .variant-desc {
+    font-size: 13px;
+    color: var(--ink3);
+    flex: 1;
+    min-width: 200px;
+    line-height: 1.5;
+  }
+  .variant-pros {
+    padding: 0 1.75rem;
+    margin-top: 1rem;
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    font-size: 12px;
+  }
+  .pros-col { flex: 1; min-width: 220px; }
+  .pros-lbl {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .09em;
+    color: var(--ink3);
+    margin-bottom: .35rem;
+  }
+  .pros-col ul { list-style: none; padding: 0; margin: 0; }
+  .pros-col li {
+    font-size: 12px;
+    color: var(--ink2);
+    line-height: 1.5;
+    padding: 2px 0 2px 18px;
+    position: relative;
+  }
+  .pros-col.good li::before { content: "+"; position: absolute; left: 4px; top: 2px; color: var(--green-hi); font-weight: 700; }
+  .pros-col.neutral li::before { content: "·"; position: absolute; left: 6px; top: 0; color: var(--ink3); font-size: 18px; line-height: 1; }
+
+  .preview-frame {
+    margin: 1.25rem 1.75rem 1.75rem;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    background: #e8e4dc;
+    padding: 1rem;
+  }
+  .preview-inner {
+    background: var(--surface);
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    overflow: hidden;
+    min-height: 480px;
+  }
+
+  /* Mini topbar inside previews */
+  .mini-topbar {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .5rem 1rem;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+    font-size: 12px;
+  }
+  .mini-logo { font-family: Georgia, serif; font-weight: 700; color: var(--blue); font-size: 12px; }
+  .mini-logo em { color: var(--ink3); font-style: normal; font-weight: 400; }
+  .mini-nav { display: flex; gap: .1rem; margin-left: .5rem; }
+  .mini-nav a {
+    font-size: 11px;
+    color: var(--ink2);
+    text-decoration: none;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 500;
+  }
+  .mini-nav a.active { background: var(--blue-bg); color: var(--blue); font-weight: 700; }
+
+  /* ===================================================================
+     VARIANT A — Sidebar + Artikkel (dokumentasjons-stil)
+     =================================================================== */
+  .vA-body { display: grid; grid-template-columns: 220px 1fr; min-height: 440px; }
+  .vA-side {
+    background: var(--s2);
+    border-right: 1px solid var(--line);
+    padding: 1rem .75rem;
+    overflow-y: auto;
+  }
+  .vA-side-lbl {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .09em;
+    color: var(--ink3);
+    padding: 0 .5rem .4rem;
+  }
+  .vA-cat {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: 7px 10px;
+    border-radius: 7px;
+    font-size: 12px;
+    color: var(--ink2);
+    cursor: default;
+    margin-bottom: 1px;
+  }
+  .vA-cat .vA-ic {
+    width: 22px; height: 22px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  .vA-cat.active { background: var(--blue-bg); color: var(--blue); font-weight: 700; }
+  .vA-cat.active .vA-ic { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .vA-cat:hover:not(.active) { background: var(--s3); }
+  .vA-sub {
+    padding: 4px 10px 4px 40px;
+    font-size: 11px;
+    color: var(--ink3);
+    cursor: default;
+    border-radius: 6px;
+  }
+  .vA-sub.active { color: var(--blue); font-weight: 600; background: var(--blue-bg); }
+  .vA-sub:hover:not(.active) { color: var(--ink2); }
+
+  .vA-main { padding: 1.5rem 1.75rem; overflow-y: auto; }
+  .vA-breadcrumb {
+    font-size: 11px;
+    color: var(--ink3);
+    margin-bottom: .75rem;
+  }
+  .vA-breadcrumb span { color: var(--blue); }
+  .vA-title {
+    font-family: Georgia, serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -.02em;
+    margin-bottom: .4rem;
+  }
+  .vA-lede {
+    font-size: 14px;
+    color: var(--ink2);
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+    max-width: 560px;
+  }
+  .vA-h2 {
+    font-family: Georgia, serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 1.25rem 0 .5rem;
+  }
+  .vA-main p { font-size: 13px; color: var(--ink2); line-height: 1.65; margin-bottom: .75rem; max-width: 560px; }
+  .vA-main ul { margin: .25rem 0 .75rem 1.2rem; }
+  .vA-main li { font-size: 13px; color: var(--ink2); line-height: 1.65; margin-bottom: .25rem; }
+
+  .vA-fig {
+    margin: 1rem 0;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    max-width: 520px;
+    background: var(--s2);
+  }
+  .vA-fig-img {
+    aspect-ratio: 16/9;
+    background:
+      repeating-linear-gradient(135deg, #d8d2c4 0 8px, #e6e0d2 8px 16px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink3);
+    font-family: monospace;
+    font-size: 11px;
+  }
+  .vA-fig-cap {
+    padding: .5rem .75rem;
+    font-size: 11px;
+    color: var(--ink3);
+    background: var(--s2);
+    border-top: 1px solid var(--line);
+    font-style: italic;
+  }
+
+  .vA-callout {
+    background: var(--amber-bg);
+    border: 1px solid #f0d890;
+    border-left: 4px solid var(--amber-hi);
+    border-radius: 6px;
+    padding: .75rem 1rem;
+    margin: 1rem 0;
+    max-width: 560px;
+    font-size: 12px;
+    color: #7a5010;
+    line-height: 1.5;
+  }
+  .vA-callout strong { color: var(--amber); }
+
+  /* ===================================================================
+     VARIANT B — Kort-grid (kategori-kort + modal/expand)
+     =================================================================== */
+  .vB-body { padding: 1.5rem 1.75rem; }
+  .vB-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: .5rem; }
+  .vB-head h2 { font-family: Georgia, serif; font-size: 1.3rem; color: var(--ink); letter-spacing: -.02em; }
+  .vB-head p { font-size: 12px; color: var(--ink3); max-width: 380px; }
+
+  .vB-search {
+    width: 100%;
+    max-width: 340px;
+    padding: 7px 12px 7px 32px;
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    font-size: 12px;
+    background: var(--surface) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14' fill='none' stroke='%238890a8' stroke-width='1.6'><circle cx='6' cy='6' r='4.2'/><path d='M9.5 9.5 l3 3'/></svg>") no-repeat 10px center/14px;
+    margin-bottom: 1rem;
+  }
+
+  .vB-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: .875rem;
+  }
+  .vB-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1rem .875rem;
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+    transition: all .14s;
+    cursor: default;
+  }
+  .vB-card:hover {
+    border-color: var(--blue-hi);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0,0,0,.06);
+  }
+  .vB-card-ic {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    margin-bottom: .35rem;
+  }
+  .vB-card-title { font-size: 13px; font-weight: 700; color: var(--ink); font-family: Georgia, serif; }
+  .vB-card-desc { font-size: 11px; color: var(--ink3); line-height: 1.45; }
+  .vB-card-count {
+    font-size: 10px;
+    color: var(--ink3);
+    margin-top: .4rem;
+    padding-top: .4rem;
+    border-top: 1px dashed var(--line);
+  }
+
+  /* Category colours (subtle) */
+  .vB-card[data-c="a"] .vB-card-ic { background: var(--blue-bg); color: var(--blue); }
+  .vB-card[data-c="b"] .vB-card-ic { background: var(--amber-bg); color: var(--amber); }
+  .vB-card[data-c="c"] .vB-card-ic { background: var(--green-bg); color: var(--green); }
+  .vB-card[data-c="d"] .vB-card-ic { background: #eee0f0; color: #603870; }
+  .vB-card[data-c="e"] .vB-card-ic { background: #fde4de; color: var(--red); }
+  .vB-card[data-c="f"] .vB-card-ic { background: #e4ece8; color: #30604a; }
+  .vB-card[data-c="g"] .vB-card-ic { background: #e8e8f0; color: #3a4870; }
+  .vB-card[data-c="h"] .vB-card-ic { background: #f0e8d8; color: #705830; }
+
+  .vB-featured {
+    background: linear-gradient(135deg, var(--blue-bg), #d8e4f0);
+    border: 1px solid var(--blue-lo);
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .vB-featured-ic {
+    width: 48px; height: 48px;
+    background: var(--blue);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .vB-featured-body { flex: 1; min-width: 0; }
+  .vB-featured-lbl {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .09em;
+    color: var(--blue-hi);
+  }
+  .vB-featured-title { font-family: Georgia, serif; font-size: 1rem; font-weight: 700; color: var(--blue); }
+  .vB-featured-desc { font-size: 12px; color: #305080; margin-top: .15rem; }
+
+  /* ===================================================================
+     VARIANT C — Akkordeon / FAQ-stil (kompakt, kronologisk)
+     =================================================================== */
+  .vC-body { padding: 1.5rem 1.75rem; max-width: 720px; margin: 0 auto; }
+  .vC-head { text-align: center; margin-bottom: 1.5rem; }
+  .vC-head h2 { font-family: Georgia, serif; font-size: 1.3rem; color: var(--ink); letter-spacing: -.02em; margin-bottom: .4rem; }
+  .vC-head p { font-size: 13px; color: var(--ink3); }
+
+  .vC-tabs {
+    display: flex;
+    gap: .35rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .vC-tab {
+    padding: 5px 11px;
+    border-radius: 20px;
+    border: 1.5px solid var(--line2);
+    background: var(--surface);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink2);
+    cursor: default;
+  }
+  .vC-tab.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+  .vC-item {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    margin-bottom: .625rem;
+    overflow: hidden;
+  }
+  .vC-item.open { border-color: var(--blue-hi); }
+  .vC-q {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .875rem 1rem;
+    cursor: default;
+  }
+  .vC-q-ic {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: var(--s2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .vC-item.open .vC-q-ic { background: var(--blue-bg); color: var(--blue); }
+  .vC-q-text {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    font-family: Georgia, serif;
+  }
+  .vC-q-chev {
+    color: var(--ink3);
+    font-size: 12px;
+    transform: rotate(0);
+    transition: transform .2s;
+  }
+  .vC-item.open .vC-q-chev { transform: rotate(90deg); color: var(--blue); }
+  .vC-a {
+    padding: 0 1rem 1rem 3.25rem;
+    font-size: 13px;
+    color: var(--ink2);
+    line-height: 1.65;
+  }
+  .vC-a p { margin-bottom: .5rem; }
+  .vC-a ul { margin: .25rem 0 .5rem 1.2rem; }
+  .vC-a li { margin-bottom: .25rem; }
+
+  .vC-img-inline {
+    margin: .5rem 0;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 420px;
+    background:
+      repeating-linear-gradient(135deg, #d8d2c4 0 8px, #e6e0d2 8px 16px);
+    aspect-ratio: 16/9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink3);
+    font-family: monospace;
+    font-size: 10px;
+  }
+
+  /* ===================================================================
+     Bottom decision bar
+     =================================================================== */
+  .decision-bar {
+    background: var(--surface);
+    border: 1px solid var(--line2);
+    border-radius: 14px;
+    padding: 1.25rem 1.75rem;
+    margin-top: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .decision-bar .dbt {
+    flex: 1;
+    min-width: 200px;
+  }
+  .decision-bar .dbt-title { font-family: Georgia, serif; font-size: 1rem; font-weight: 700; color: var(--ink); margin-bottom: .2rem; }
+  .decision-bar .dbt-sub { font-size: 12px; color: var(--ink3); line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<div class="overview-wrap">
+
+  <div class="ov-head">
+    <h1>Kompasset — 3 designvarianter</h1>
+    <p>Tre ulike måter å organisere tips, instruksjoner og bilder på. Alle støtter opplasting av PNG / JPEG / SVG via admin-panelet. Velg den som passer bruken best.</p>
+  </div>
+
+  <div class="variant-grid">
+
+    <!-- ════════════════════════════════════════════════════════════
+         VARIANT A — Sidebar + Artikkel
+         ════════════════════════════════════════════════════════════ -->
+    <div class="variant">
+      <div class="variant-head">
+        <span class="variant-num">Variant A</span>
+        <span class="variant-name">Sidebar + Artikkel</span>
+        <span class="variant-desc">Klassisk dokumentasjons-layout. Kategorier til venstre, langt innhold i midten. Best for instruksjons­materiale med mange underpunkter og store bilder.</span>
+      </div>
+
+      <div class="variant-pros">
+        <div class="pros-col good">
+          <div class="pros-lbl">Bra for</div>
+          <ul>
+            <li>Lange forklaringer og trinn-for-trinn-guider</li>
+            <li>Hierarki med kategorier + under­seksjoner</li>
+            <li>Store skjermbilder og illustrasjoner</li>
+            <li>Læreres «slå opp»-bruk</li>
+          </ul>
+        </div>
+        <div class="pros-col neutral">
+          <div class="pros-lbl">Tenk på</div>
+          <ul>
+            <li>Tar mer plass på mobil (sidebar kollapser)</li>
+            <li>Mer arbeid å skrive innhold til</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="preview-frame">
+        <div class="preview-inner">
+
+          <div class="mini-topbar">
+            <span class="mini-logo">KI<em> i klasserommet</em></span>
+            <nav class="mini-nav">
+              <a>Kurskartet</a>
+              <a>Veiviseren</a>
+              <a>Min bank</a>
+              <a class="active">Kompasset</a>
+            </nav>
+          </div>
+
+          <div class="vA-body">
+            <aside class="vA-side">
+              <div class="vA-side-lbl">Kategorier</div>
+
+              <div class="vA-cat"><span class="vA-ic">📍</span>Kom i gang</div>
+              <div class="vA-cat active"><span class="vA-ic">💡</span>Prompt-tips</div>
+                <div class="vA-sub">Hva er en god prompt?</div>
+                <div class="vA-sub active">5-stegs-oppskriften</div>
+                <div class="vA-sub">Vanlige feil</div>
+              <div class="vA-cat"><span class="vA-ic">🎓</span>Pedagogikk</div>
+              <div class="vA-cat"><span class="vA-ic">⚙️</span>Tekniske tips</div>
+              <div class="vA-cat"><span class="vA-ic">🔒</span>Personvern</div>
+              <div class="vA-cat"><span class="vA-ic">📚</span>Begreper</div>
+              <div class="vA-cat"><span class="vA-ic">🎬</span>Videoguider</div>
+              <div class="vA-cat"><span class="vA-ic">❓</span>FAQ</div>
+            </aside>
+
+            <div class="vA-main">
+              <div class="vA-breadcrumb">Kompasset <span>›</span> Prompt-tips <span>›</span> 5-stegs-oppskriften</div>
+              <h1 class="vA-title">5-stegs-oppskriften for en god prompt</h1>
+              <p class="vA-lede">Gode prompts følger sjelden tilfeldighetene. Her er oppskriften vi bruker på kurset — prøv den på ditt neste undervisningsopplegg.</p>
+
+              <div class="vA-fig">
+                <div class="vA-fig-img">[ illustrasjon.png ]</div>
+                <div class="vA-fig-cap">Figur 1 — Oppskriften visualisert som et flytskjema.</div>
+              </div>
+
+              <h2 class="vA-h2">1. Gi KI en rolle</h2>
+              <p>Start alltid prompten med å fortelle KI-en hvem den skal være. «Du er en erfaren lærer i norsk på videregående …» gir helt andre svar enn en tom spørsmål.</p>
+
+              <h2 class="vA-h2">2. Beskriv oppgaven konkret</h2>
+              <ul>
+                <li>Fag, trinn, tidsramme</li>
+                <li>Temaet det gjelder</li>
+                <li>Hva elevene skal sitte igjen med</li>
+              </ul>
+
+              <div class="vA-callout">
+                <strong>Tips:</strong> Jo mer kontekst du gir, desto bedre svar. Men unngå personopplysninger om elever — bruk «28 elever med stor spredning» i stedet for navn.
+              </div>
+
+              <h2 class="vA-h2">3. Sett rammer for svaret</h2>
+              <p>Be om et bestemt format: «punktliste», «tabell», «maks 150 ord». Da slipper du å redigere etterpå.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════
+         VARIANT B — Kort-grid
+         ════════════════════════════════════════════════════════════ -->
+    <div class="variant">
+      <div class="variant-head">
+        <span class="variant-num">Variant B</span>
+        <span class="variant-name">Kort-grid med oppslag</span>
+        <span class="variant-desc">Visuell oversikt der hver kategori er et kort. Klikk åpner detaljvisning i full bredde. Best når du vil vise mangfoldet av tips før læreren bestemmer seg for ett tema.</span>
+      </div>
+
+      <div class="variant-pros">
+        <div class="pros-col good">
+          <div class="pros-lbl">Bra for</div>
+          <ul>
+            <li>Utforsking og «blafring»</li>
+            <li>Visuelt preg med ikoner og farger</li>
+            <li>Fungerer utmerket på mobil</li>
+            <li>Matcher stilen på Kurskartet</li>
+          </ul>
+        </div>
+        <div class="pros-col neutral">
+          <div class="pros-lbl">Tenk på</div>
+          <ul>
+            <li>Krever ekstra klikk for å lese innhold</li>
+            <li>Mindre egnet for sekvensielle guider</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="preview-frame">
+        <div class="preview-inner">
+
+          <div class="mini-topbar">
+            <span class="mini-logo">KI<em> i klasserommet</em></span>
+            <nav class="mini-nav">
+              <a>Kurskartet</a>
+              <a>Veiviseren</a>
+              <a>Min bank</a>
+              <a class="active">Kompasset</a>
+            </nav>
+          </div>
+
+          <div class="vB-body">
+            <div class="vB-head">
+              <div>
+                <h2>Kompasset</h2>
+                <p>Råd, oppskrifter og svar på det lærerne ofte spør om.</p>
+              </div>
+            </div>
+
+            <input class="vB-search" placeholder="Søk i tips og instruksjoner…" readonly>
+
+            <div class="vB-featured">
+              <div class="vB-featured-ic">📍</div>
+              <div class="vB-featured-body">
+                <div class="vB-featured-lbl">Start her</div>
+                <div class="vB-featured-title">Ny på KI i klasserommet?</div>
+                <div class="vB-featured-desc">2-minutters omvisning gjennom øykartet og veiviseren.</div>
+              </div>
+              <span class="btn primary sm">Start →</span>
+            </div>
+
+            <div class="vB-grid">
+              <div class="vB-card" data-c="a">
+                <div class="vB-card-ic">💡</div>
+                <div class="vB-card-title">Prompt-tips</div>
+                <div class="vB-card-desc">Rolle, kontekst, rammer — slik skriver du gode prompts.</div>
+                <div class="vB-card-count">6 artikler</div>
+              </div>
+              <div class="vB-card" data-c="b">
+                <div class="vB-card-ic">🎓</div>
+                <div class="vB-card-title">Pedagogiske råd</div>
+                <div class="vB-card-desc">KI som sparringspartner — ikke erstatter for læreren.</div>
+                <div class="vB-card-count">4 artikler</div>
+              </div>
+              <div class="vB-card" data-c="c">
+                <div class="vB-card-ic">⚙️</div>
+                <div class="vB-card-title">Tekniske tips</div>
+                <div class="vB-card-desc">Copilot-innstillinger, hurtigtaster og feilsøking.</div>
+                <div class="vB-card-count">5 artikler</div>
+              </div>
+              <div class="vB-card" data-c="d">
+                <div class="vB-card-ic">🔒</div>
+                <div class="vB-card-title">Personvern</div>
+                <div class="vB-card-desc">Hva du kan og ikke kan lime inn i Copilot.</div>
+                <div class="vB-card-count">3 artikler</div>
+              </div>
+              <div class="vB-card" data-c="e">
+                <div class="vB-card-ic">📚</div>
+                <div class="vB-card-title">Begreper</div>
+                <div class="vB-card-desc">Prompt, hallusinasjon, token — ordliste for lærere.</div>
+                <div class="vB-card-count">12 begreper</div>
+              </div>
+              <div class="vB-card" data-c="f">
+                <div class="vB-card-ic">🎬</div>
+                <div class="vB-card-title">Videoguider</div>
+                <div class="vB-card-desc">Korte skjermopptak fra veiviseren og kortene.</div>
+                <div class="vB-card-count">4 videoer</div>
+              </div>
+              <div class="vB-card" data-c="g">
+                <div class="vB-card-ic">❓</div>
+                <div class="vB-card-title">FAQ</div>
+                <div class="vB-card-desc">Svar på det kollegene ofte spør om.</div>
+                <div class="vB-card-count">9 spørsmål</div>
+              </div>
+              <div class="vB-card" data-c="h">
+                <div class="vB-card-ic">📥</div>
+                <div class="vB-card-title">Mal-samling</div>
+                <div class="vB-card-desc">Nedlastbare .docx, .xlsx og .pdf-maler.</div>
+                <div class="vB-card-count">7 filer</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════
+         VARIANT C — Akkordeon / FAQ
+         ════════════════════════════════════════════════════════════ -->
+    <div class="variant">
+      <div class="variant-head">
+        <span class="variant-num">Variant C</span>
+        <span class="variant-name">Akkordeon — alt på én side</span>
+        <span class="variant-desc">Kompakt kunnskaps­base: filter­bart emne-strip øverst, utvidbare tips under. Rask å skanne, lite scrolling før man treffer noe relevant.</span>
+      </div>
+
+      <div class="variant-pros">
+        <div class="pros-col good">
+          <div class="pros-lbl">Bra for</div>
+          <ul>
+            <li>Korte, frittstående tips</li>
+            <li>Raskt overblikk på én side</li>
+            <li>Krever minst innhold å produsere</li>
+            <li>Enkel å vedlikeholde</li>
+          </ul>
+        </div>
+        <div class="pros-col neutral">
+          <div class="pros-lbl">Tenk på</div>
+          <ul>
+            <li>Mindre visuelt preg — mer «tekstlig»</li>
+            <li>Vanskeligere å plassere store bilder pent</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="preview-frame">
+        <div class="preview-inner">
+
+          <div class="mini-topbar">
+            <span class="mini-logo">KI<em> i klasserommet</em></span>
+            <nav class="mini-nav">
+              <a>Kurskartet</a>
+              <a>Veiviseren</a>
+              <a>Min bank</a>
+              <a class="active">Kompasset</a>
+            </nav>
+          </div>
+
+          <div class="vC-body">
+            <div class="vC-head">
+              <h2>Kompasset</h2>
+              <p>Tips og svar — samlet på ett sted. Klikk for å utvide.</p>
+            </div>
+
+            <div class="vC-tabs">
+              <span class="vC-tab on">Alle</span>
+              <span class="vC-tab">📍 Kom i gang</span>
+              <span class="vC-tab">💡 Prompt-tips</span>
+              <span class="vC-tab">🎓 Pedagogikk</span>
+              <span class="vC-tab">⚙️ Teknisk</span>
+              <span class="vC-tab">🔒 Personvern</span>
+              <span class="vC-tab">❓ FAQ</span>
+            </div>
+
+            <div class="vC-item open">
+              <div class="vC-q">
+                <span class="vC-q-ic">💡</span>
+                <span class="vC-q-text">Hva gjør en prompt god?</span>
+                <span class="vC-q-chev">›</span>
+              </div>
+              <div class="vC-a">
+                <p>En god prompt gir KI-en tre ting: <strong>rolle</strong>, <strong>kontekst</strong> og <strong>rammer</strong>.</p>
+                <ul>
+                  <li>Rolle: «Du er lærer i norsk på Vg2 …»</li>
+                  <li>Kontekst: fag, trinn, tema, tidsramme</li>
+                  <li>Rammer: format, lengde, stil</li>
+                </ul>
+                <div class="vC-img-inline">[ eksempel.png ]</div>
+              </div>
+            </div>
+
+            <div class="vC-item">
+              <div class="vC-q">
+                <span class="vC-q-ic">🔒</span>
+                <span class="vC-q-text">Hva kan jeg ikke lime inn i Copilot?</span>
+                <span class="vC-q-chev">›</span>
+              </div>
+            </div>
+
+            <div class="vC-item">
+              <div class="vC-q">
+                <span class="vC-q-ic">🎓</span>
+                <span class="vC-q-text">Hvordan bruker jeg KI pedagogisk forsvarlig?</span>
+                <span class="vC-q-chev">›</span>
+              </div>
+            </div>
+
+            <div class="vC-item">
+              <div class="vC-q">
+                <span class="vC-q-ic">⚙️</span>
+                <span class="vC-q-text">Copilot-prompten min blir avkortet — hva gjør jeg?</span>
+                <span class="vC-q-chev">›</span>
+              </div>
+            </div>
+
+            <div class="vC-item">
+              <div class="vC-q">
+                <span class="vC-q-ic">❓</span>
+                <span class="vC-q-text">Hvor lenge lagres «Min bank»?</span>
+                <span class="vC-q-chev">›</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Decision bar -->
+  <div class="decision-bar">
+    <div class="dbt">
+      <div class="dbt-title">Hvilken variant vil du gå videre med?</div>
+      <div class="dbt-sub">Gi meg navnet (A, B eller C), så bygger jeg en fullt fungerende prototype med admin-opplasting av bilder (PNG / JPEG / SVG). Vil du kombinere — f.eks. «B til forsiden, A for hver artikkel» — si fra, så tilpasser jeg.</div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -3,6 +3,10 @@
    Bygger på variabler fra style.css (blå/hvit-palett)
    ============================================================ */
 
+/* Override app-shell constraints from style.css so body scrolls naturally */
+html, body { height: auto; min-height: 100%; }
+.app { height: auto; overflow: visible; }
+
 .kompass-wrap {
   max-width: 1100px;
   margin: 0 auto;

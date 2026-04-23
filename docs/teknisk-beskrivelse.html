@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teknisk beskrivelse – KI i klasserommet</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 14px; color: #1a1a2e; background: #f4f6fb; }
+  .page { max-width: 860px; margin: 0 auto; padding: 40px 48px 60px; background: #fff; min-height: 100vh; }
+  h1 { font-size: 26px; font-weight: 700; color: #0f3460; border-bottom: 3px solid #0f3460; padding-bottom: 10px; margin-bottom: 6px; }
+  .meta { font-size: 12px; color: #666; margin-bottom: 32px; }
+  h2 { font-size: 17px; font-weight: 700; color: #0f3460; margin: 36px 0 10px; border-left: 4px solid #2196f3; padding-left: 10px; }
+  h3 { font-size: 14px; font-weight: 700; color: #333; margin: 18px 0 6px; }
+  p { line-height: 1.65; margin-bottom: 10px; color: #333; }
+  ul, ol { padding-left: 20px; margin-bottom: 10px; }
+  li { line-height: 1.65; margin-bottom: 4px; color: #333; }
+  code { font-family: Consolas, monospace; font-size: 12.5px; background: #f0f4ff; border: 1px solid #d0d8f0; padding: 1px 5px; border-radius: 3px; }
+  pre { background: #1e2235; color: #c5d0f0; font-family: Consolas, monospace; font-size: 12px; padding: 14px 16px; border-radius: 6px; overflow-x: auto; margin: 10px 0 14px; line-height: 1.6; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13px; }
+  th { background: #0f3460; color: #fff; padding: 8px 12px; text-align: left; font-weight: 600; }
+  td { padding: 7px 12px; border-bottom: 1px solid #e8ecf5; vertical-align: top; }
+  tr:nth-child(even) td { background: #f6f8fd; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 12px; margin-left: 6px; }
+  .badge-blue { background: #e3f0ff; color: #1565c0; }
+  .badge-green { background: #e8f5e9; color: #2e7d32; }
+  .badge-orange { background: #fff3e0; color: #e65100; }
+  .callout { border-left: 4px solid #2196f3; background: #e3f2fd; padding: 10px 14px; border-radius: 0 6px 6px 0; margin: 12px 0; font-size: 13px; }
+  .callout.warn { border-color: #ff9800; background: #fff8e1; }
+  .callout.green { border-color: #4caf50; background: #e8f5e9; }
+  .toc { background: #f0f4ff; border: 1px solid #c5d0f0; border-radius: 6px; padding: 16px 20px; margin-bottom: 32px; }
+  .toc h3 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: #555; }
+  .toc a { color: #1565c0; text-decoration: none; font-size: 13px; display: block; padding: 2px 0; }
+  .toc a:hover { text-decoration: underline; }
+  .toc .sub { padding-left: 14px; font-size: 12.5px; }
+
+  /* ── ARKITEKTUR-DIAGRAM ── */
+  .arch { display: grid; grid-template-columns: 1fr; gap: 0; margin: 18px 0; font-size: 12px; }
+  .arch-row { display: flex; align-items: stretch; gap: 0; }
+  .arch-box { border: 2px solid #90a4c8; border-radius: 6px; padding: 10px 14px; background: #e8edf8; text-align: center; min-width: 110px; }
+  .arch-box.dark { background: #0f3460; color: #fff; border-color: #0f3460; }
+  .arch-box.green { background: #e8f5e9; border-color: #66bb6a; }
+  .arch-box.orange { background: #fff3e0; border-color: #ffb74d; }
+  .arch-box .label { font-weight: 700; font-size: 12px; display: block; margin-bottom: 2px; }
+  .arch-box .sub { font-size: 10.5px; color: inherit; opacity: .8; }
+  .arch-arrow { display: flex; align-items: center; justify-content: center; padding: 0 6px; color: #555; font-size: 16px; }
+  .arch-section { border: 2px dashed #90a4c8; border-radius: 8px; padding: 14px 18px; margin: 6px 0; position: relative; }
+  .arch-section-label { position: absolute; top: -10px; left: 12px; background: #fff; padding: 0 6px; font-size: 11px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: .05em; }
+
+  .flow { display: flex; flex-direction: column; gap: 0; align-items: flex-start; margin: 14px 0; }
+  .flow-step { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; }
+  .flow-num { width: 24px; height: 24px; border-radius: 50%; background: #0f3460; color: #fff; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .flow-content .title { font-weight: 700; font-size: 13px; }
+  .flow-content .desc { font-size: 12.5px; color: #555; margin-top: 2px; }
+  .flow-line { width: 1px; height: 14px; background: #c5d0f0; margin-left: 12px; }
+
+  @media print {
+    body { background: #fff; }
+    .page { box-shadow: none; padding: 20px 30px; }
+    h2 { page-break-after: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>KI i klasserommet — Teknisk beskrivelse</h1>
+  <div class="meta">Versjon 3 &nbsp;·&nbsp; April 2026 &nbsp;·&nbsp; Intern dokumentasjon for utviklere og driftsansvarlige</div>
+
+  <div class="toc">
+    <h3>Innhold</h3>
+    <a href="#oversikt">1. Prosjektoversikt</a>
+    <a href="#teknologi">2. Teknologi og språk</a>
+    <a href="#filstruktur">3. Filstruktur</a>
+    <a href="#sider">4. Sider og komponenter</a>
+    <a href="#data">5. Datamodell</a>
+    <a href="#lagring">6. Lagring og tilstand</a>
+    <a href="#admin">7. Admin-panel</a>
+    <a href="#arkitektur">8. Arkitektur</a>
+    <a href="#deployment">9. Deployment – GitHub Pages</a>
+    <a href="#intern-server">10. Migrering til intern webserver</a>
+    <a href="#konfigurasjon">11. Konfigurasjon</a>
+    <a href="#vedlikehold">12. Vedlikehold</a>
+  </div>
+
+  <!-- 1 -->
+  <h2 id="oversikt">1. Prosjektoversikt</h2>
+  <p><strong>KI i klasserommet</strong> er et nettbasert kursverktøy for lærere i videregående skole. Formålet er å gjøre Microsoft Copilot praktisk og tilgjengelig gjennom prompt-kort, en faglig veiviser, en personlig prompt-bank og en veiledningsportal (Kompasset).</p>
+  <p>Løsningen er bygget som en <strong>ren statisk nettside</strong> uten backend, database eller build-prosess. Den kan hostes på GitHub Pages, intern webserver, SharePoint, eller ethvert filbasert webhosting-miljø.</p>
+
+  <table>
+    <tr><th>Egenskap</th><th>Verdi</th></tr>
+    <tr><td>Målgruppe</td><td>Lærere i videregående skole</td></tr>
+    <tr><td>Primær KI-tjeneste</td><td>Microsoft Copilot</td></tr>
+    <tr><td>Hosting (standard)</td><td>GitHub Pages</td></tr>
+    <tr><td>Backend</td><td>Ingen</td></tr>
+    <tr><td>Rammeverk</td><td>Ingen (vanilla)</td></tr>
+    <tr><td>Byggesystem</td><td>Ingen</td></tr>
+    <tr><td>Avhengigheter</td><td>Ingen npm/node-pakker</td></tr>
+  </table>
+
+  <!-- 2 -->
+  <h2 id="teknologi">2. Teknologi og språk</h2>
+
+  <table>
+    <tr><th>Lag</th><th>Teknologi</th><th>Versjon/standard</th></tr>
+    <tr><td>Markup</td><td>HTML5</td><td>Living Standard</td></tr>
+    <tr><td>Stil</td><td>CSS3 – egendefinerte variabler, Grid, Flexbox</td><td>Ingen preprocessor</td></tr>
+    <tr><td>Logikk</td><td>Vanilla JavaScript (ES2020+)</td><td>Moderne nettlesere</td></tr>
+    <tr><td>Data</td><td>JavaScript-objekter (IIFE-fritt, globale variabler)</td><td>.js datafiler</td></tr>
+    <tr><td>Lagring</td><td>localStorage / sessionStorage</td><td>Nettlesernativt</td></tr>
+    <tr><td>Publisering</td><td>GitHub REST API v3</td><td>Kun Kompasset</td></tr>
+  </table>
+
+  <div class="callout">
+    Ingen transpilering, ingen bundling. Alle filer kan redigeres direkte i et tekstredigeringsprogram og lastes opp til server uten byggsteg.
+  </div>
+
+  <!-- 3 -->
+  <h2 id="filstruktur">3. Filstruktur</h2>
+
+  <pre>Ki-klasserommet v3/
+│
+├── index.html          ← Kurskartet (startside)
+├── veiviser.html       ← Veiviseren
+├── min-bank.html       ← Min bank
+├── kompasset.html      ← Kompasset (HTML-skall)
+│
+├── style.css           ← Felles stilark (CSS-variabler, topbar, modal, kort)
+├── kompasset.css       ← Stilark spesifikt for Kompasset
+│
+├── config.js           ← Konfigurasjon (PIN, sitenavn, Copilot-URL)
+├── config.example.js   ← Mal for ny instans (commit-sikker)
+│
+├── data.js             ← Alt innhold: øyer, prompt-kort, fag, kompetansemål
+├── kompasset-data.js   ← Veiledningsinnhold: kategorier og tips-blokker
+│
+└── kompasset.js        ← All logikk for Kompasset-siden</pre>
+
+  <div class="callout warn">
+    <code>config.js</code> inneholder admin-PIN og er i <code>.gitignore</code> på nye installasjoner. Bruk <code>config.example.js</code> som mal og legg til <code>config.js</code> lokalt.
+  </div>
+
+  <!-- 4 -->
+  <h2 id="sider">4. Sider og komponenter</h2>
+
+  <h3>4.1 index.html — Kurskartet</h3>
+  <p>Hovelsiden. Viser et interaktivt øykart med 6 tematiske «øyer» (Kom i gang, Undervisning, Vurdering, Tilpasset opplæring, Koding, Kildebruk). Hver øy inneholder prompt-kort som lastes fra <code>data.js</code>.</p>
+  <ul>
+    <li>Øyer rendres som SVG-elementer; klikk åpner en zoom-visning med kortliste</li>
+    <li>«Kildebruk»-øyen er låst bak en tåkemekanikk (fog-of-war) og åpnes etter <code>CONFIG.fogUnlockAt</code> fullførte kapitler</li>
+    <li>Fremdrift lagres i <code>localStorage</code> under nøkkelen <code>ki-state</code></li>
+    <li>Prompt-kort kan lagres til «Min bank» via modal</li>
+    <li>Inneholder admin-panel (PIN-beskyttet, se §7)</li>
+    <li>Laster: <code>config.js</code> → <code>data.js</code> → inline <code>&lt;script&gt;</code></li>
+  </ul>
+
+  <h3>4.2 veiviser.html — Veiviseren</h3>
+  <p>Et stegbasert skjema der læreren velger fag, klassetrinn og pedagogisk mål. Genererer et skreddersydd prompt basert på valgene, med direkte lenke til riktig læreplan på udir.no.</p>
+  <ul>
+    <li>All fagdata og kompetansemål hentes fra <code>FAG</code>-arrayen i <code>data.js</code></li>
+    <li>Fag grupperes i <code>&lt;optgroup&gt;</code> basert på <code>FAG_GRUPPER</code></li>
+    <li>Generert prompt kan kopieres med ett klikk og lagres i «Min bank»</li>
+    <li>Laster: <code>config.js</code> → <code>data.js</code> → inline <code>&lt;script&gt;</code></li>
+  </ul>
+
+  <h3>4.3 min-bank.html — Min bank</h3>
+  <p>Personlig prompt-bibliotek. Alle lagrede prompts vises som kort med navn, kilde og tidsstempel. Prompts kan slettes individuelt eller eksporteres som <code>.txt</code>-fil.</p>
+  <ul>
+    <li>Data hentes fra <code>localStorage</code>, nøkkel <code>ki-bank</code> (JSON-array)</li>
+    <li>Kun klientsidelagring — ingen synkronisering mellom nettlesere</li>
+    <li>Laster: <code>config.js</code> → inline <code>&lt;script&gt;</code></li>
+  </ul>
+
+  <h3>4.4 kompasset.html + kompasset.js — Kompasset</h3>
+  <p>En veiledningsportal med kategoriserte tips, guider og ressurser for lærerne. Innholdet er strukturert i kategorier og tips-blokker med støtte for tekst, lister, kode-bokser, bilder og videoinnbygging.</p>
+  <ul>
+    <li>HTML-skall i <code>kompasset.html</code>; all logikk og rendering i <code>kompasset.js</code></li>
+    <li>Startdata fra <code>kompasset-data.js</code>; admin-endringer lagres som overlay i <code>localStorage</code></li>
+    <li>Admin kan laste opp bilder (base64), importere/eksportere JSON, og publisere direkte til GitHub Pages via GitHub API</li>
+    <li>GitHub-token lagres i <code>sessionStorage</code> (slettes ved lukking av fane); repo-URL i <code>localStorage</code></li>
+    <li>Laster: <code>config.js</code> → <code>kompasset-data.js</code> → <code>kompasset.css</code> → <code>kompasset.js</code></li>
+  </ul>
+
+  <!-- 5 -->
+  <h2 id="data">5. Datamodell</h2>
+
+  <h3>5.1 data.js – Globale variabler</h3>
+  <table>
+    <tr><th>Variabel</th><th>Type</th><th>Innhold</th></tr>
+    <tr><td><code>FAG_GRUPPER</code></td><td>Array&lt;string&gt;</td><td>Fagkategorier (vises som optgroup)</td></tr>
+    <tr><td><code>FAG</code></td><td>Array&lt;Object&gt;</td><td>Alle fag med navn, kode, gruppe, udir-URL og kompetansemål</td></tr>
+    <tr><td><code>ISLANDS</code></td><td>Array&lt;Object&gt;</td><td>6 øyer med id, navn, farge og kortliste</td></tr>
+    <tr><td><code>UDIR_HOVED</code></td><td>string</td><td>Fallback-URL til udir.no hvis fagkode-URL gir 404</td></tr>
+  </table>
+
+  <h3>5.2 Prompt-kort-objekt</h3>
+  <pre>{
+  id:       "und-01",          // Unik ID (prefix = øy-forkortelse)
+  title:    "Åpningstekst",    // Vises på kortet
+  time:     "5 min",           // Estimert tidsbruk
+  out:      "En åpningstekst", // Hva læreren får
+  do:       "Gjør dette …",    // Instruksjon
+  prompt:   "Du er lærer i …", // Selve prompten
+  tags:     ["Vg1", "Norsk"],  // Filtreringsstikkord
+  udir:     "NOR01-06"         // Fagkode (brukes til lenke)
+}</pre>
+
+  <h3>5.3 kompasset-data.js – Tips-blokker</h3>
+  <p>Hvert tips har et <code>innhold</code>-array med typede blokker:</p>
+  <table>
+    <tr><th>Type</th><th>Felt</th><th>Beskrivelse</th></tr>
+    <tr><td><code>p</code></td><td>tekst</td><td>Avsnitt</td></tr>
+    <tr><td><code>h2</code></td><td>tekst</td><td>Mellomtittel</td></tr>
+    <tr><td><code>liste</code></td><td>punkter[]</td><td>Punktliste</td></tr>
+    <tr><td><code>tips</code></td><td>tekst</td><td>Fremhevet tips / advarsel</td></tr>
+    <tr><td><code>kode</code></td><td>tekst</td><td>Kode-/prompt-boks</td></tr>
+    <tr><td><code>bilde</code></td><td>src, alt, bildetekst</td><td>Bilde (URL, filsti eller base64)</td></tr>
+    <tr><td><code>video</code></td><td>embed</td><td>YouTube-innbygging (iframe)</td></tr>
+    <tr><td><code>lenke</code></td><td>href, tekst</td><td>Ekstern lenke</td></tr>
+  </table>
+
+  <!-- 6 -->
+  <h2 id="lagring">6. Lagring og tilstand</h2>
+
+  <table>
+    <tr><th>Nøkkel</th><th>Lager</th><th>Innhold</th></tr>
+    <tr><td><code>ki-state</code></td><td>localStorage</td><td>Fremdrift: fullførte kort, fullførte øyer, låste veivisere</td></tr>
+    <tr><td><code>ki-bank</code></td><td>localStorage</td><td>Array av lagrede prompts med navn og tidsstempel</td></tr>
+    <tr><td><code>ki-kompasset</code></td><td>localStorage</td><td>Admin-overlay for Kompasset (endringer på toppen av startdata)</td></tr>
+    <tr><td><code>kg_gh_repo</code></td><td>localStorage</td><td>GitHub-repo-URL for Kompasset-publisering</td></tr>
+    <tr><td><code>kg_gh_token</code></td><td>sessionStorage</td><td>GitHub Personal Access Token (slettes ved fane-lukking)</td></tr>
+  </table>
+
+  <div class="callout warn">
+    All brukerdata er lokalt i nettleseren. Det finnes ingen server-synkronisering. Lærere bør eksportere <code>.txt</code>-filer fra «Min bank» for sikker lagring.
+  </div>
+
+  <!-- 7 -->
+  <h2 id="admin">7. Admin-panel</h2>
+  <p>Admin-panelet er tilgjengelig på alle sider. Aktiveres ved å klikke på logoen 3 ganger raskt, eller via «Admin»-knappen (skjult by default).</p>
+
+  <h3>Funksjonalitet</h3>
+  <ul>
+    <li><strong>Kurskartet:</strong> Legg til egne prompt-kort; eksporter oppdatert <code>data.js</code> / JSON</li>
+    <li><strong>Kompasset:</strong> Legg til/rediger/slett tips; last opp bilder; importer/eksporter JSON; publiser <code>kompasset-data.js</code> direkte til GitHub via API</li>
+  </ul>
+
+  <h3>PIN-kode</h3>
+  <p>PIN settes i <code>config.js</code> under <code>ADMIN_PIN</code>. Standard er <code>"2030"</code> – endre dette før produksjonssetting.</p>
+
+  <div class="callout warn">
+    Admin-PIN er ikke kryptering og gir ikke sikkerhet mot teknisk kyndige brukere som inspiserer kildekoden. Panelet er ment for å hindre utilsiktet redigering, ikke for å beskytte sensitiv informasjon.
+  </div>
+
+  <!-- 8 -->
+  <h2 id="arkitektur">8. Arkitektur</h2>
+
+  <h3>8.1 Overordnet systemarkitektur</h3>
+
+  <div style="background:#f0f4ff;border:1px solid #c5d0f0;border-radius:8px;padding:24px 28px;margin:14px 0;font-family:Consolas,monospace;font-size:12.5px;line-height:1.8;">
+    <div style="text-align:center;margin-bottom:18px;">
+      <span style="background:#0f3460;color:#fff;padding:6px 18px;border-radius:6px;font-weight:700;">NETTLESER (klient)</span>
+    </div>
+
+    <div style="border:2px dashed #90a4c8;border-radius:8px;padding:14px 18px;margin-bottom:14px;position:relative;">
+      <span style="position:absolute;top:-10px;left:12px;background:#f0f4ff;padding:0 6px;font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.05em;">Applikasjonslag (statiske filer)</span>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px;">
+        <div style="border:2px solid #2196f3;border-radius:5px;padding:8px;text-align:center;background:#e3f2fd;">
+          <div style="font-weight:700;">index.html</div>
+          <div style="font-size:10.5px;color:#555;">Kurskartet</div>
+        </div>
+        <div style="border:2px solid #2196f3;border-radius:5px;padding:8px;text-align:center;background:#e3f2fd;">
+          <div style="font-weight:700;">veiviser.html</div>
+          <div style="font-size:10.5px;color:#555;">Veiviseren</div>
+        </div>
+        <div style="border:2px solid #2196f3;border-radius:5px;padding:8px;text-align:center;background:#e3f2fd;">
+          <div style="font-weight:700;">min-bank.html</div>
+          <div style="font-size:10.5px;color:#555;">Min bank</div>
+        </div>
+        <div style="border:2px solid #2196f3;border-radius:5px;padding:8px;text-align:center;background:#e3f2fd;">
+          <div style="font-weight:700;">kompasset.html</div>
+          <div style="font-size:10.5px;color:#555;">Kompasset</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px;">
+        <div style="border:2px solid #66bb6a;border-radius:5px;padding:7px;text-align:center;background:#e8f5e9;">
+          <div style="font-weight:700;">style.css</div>
+          <div style="font-size:10.5px;color:#555;">Felles stilark</div>
+        </div>
+        <div style="border:2px solid #ffb74d;border-radius:5px;padding:7px;text-align:center;background:#fff3e0;">
+          <div style="font-weight:700;">config.js</div>
+          <div style="font-size:10.5px;color:#555;">Konfigurasjon</div>
+        </div>
+        <div style="border:2px solid #ab47bc;border-radius:5px;padding:7px;text-align:center;background:#f3e5f5;">
+          <div style="font-weight:700;">data.js / kompasset-data.js</div>
+          <div style="font-size:10.5px;color:#555;">Innholdsdata</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:16px;margin-bottom:14px;">
+      <div style="flex:1;border:2px dashed #66bb6a;border-radius:8px;padding:12px 14px;position:relative;">
+        <span style="position:absolute;top:-10px;left:12px;background:#f0f4ff;padding:0 6px;font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.05em;">Klientlagring</span>
+        <div style="margin-top:4px;">
+          <div><strong>localStorage</strong></div>
+          <div style="font-size:11px;color:#555;">ki-state &nbsp;·&nbsp; ki-bank &nbsp;·&nbsp; ki-kompasset &nbsp;·&nbsp; kg_gh_repo</div>
+          <div style="margin-top:6px;"><strong>sessionStorage</strong></div>
+          <div style="font-size:11px;color:#555;">kg_gh_token (GitHub PAT – slettes ved fane-lukking)</div>
+        </div>
+      </div>
+      <div style="flex:1;border:2px dashed #ffb74d;border-radius:8px;padding:12px 14px;position:relative;">
+        <span style="position:absolute;top:-10px;left:12px;background:#f0f4ff;padding:0 6px;font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.05em;">Ekstern API (valgfritt)</span>
+        <div style="margin-top:4px;">
+          <div><strong>GitHub REST API</strong></div>
+          <div style="font-size:11px;color:#555;">Kun brukt av Kompasset-admin for å skrive kompasset-data.js til GitHub-repo</div>
+          <div style="margin-top:6px;font-size:11px;color:#888;">Ikke nødvendig for vanlig bruk</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:6px;">
+      <span style="background:#0f3460;color:#fff;padding:6px 18px;border-radius:6px;font-weight:700;">WEBSERVER (GitHub Pages / intern server)</span>
+      <div style="font-size:11px;color:#555;margin-top:4px;">Serverer statiske filer – ingen server-side kode</div>
+    </div>
+  </div>
+
+  <h3>8.2 Skriptlasterekkefølge</h3>
+  <pre>config.js       ←  Må lastes først (CONFIG-objektet brukes av alle andre scripts)
+data.js         ←  Definerer ISLANDS, FAG, FAG_GRUPPER, UDIR_HOVED
+kompasset-data.js ← Definerer KOMPASS_KATEGORIER, KOMPASS_TIPS
+kompasset.js    ←  Leser variablene fra de tre filene over
+[inline script] ←  Sidelogikk (index.html, veiviser.html, min-bank.html)</pre>
+
+  <!-- 9 -->
+  <h2 id="deployment">9. Deployment – GitHub Pages</h2>
+
+  <h3>9.1 Flyt for vanlig oppdatering</h3>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-content">
+        <div class="title">Rediger datafil lokalt</div>
+        <div class="desc">Åpne <code>data.js</code> eller <code>kompasset-data.js</code> i teksteditor. Gjør endringer. Lagre med UTF-8 encoding.</div>
+      </div>
+    </div>
+    <div class="flow-line"></div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-content">
+        <div class="title">Test lokalt</div>
+        <div class="desc">Åpne <code>index.html</code> direkte i nettleser, eller kjør en lokal HTTP-server (<code>python -m http.server</code>).</div>
+      </div>
+    </div>
+    <div class="flow-line"></div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-content">
+        <div class="title">Commit og push</div>
+        <div class="desc"><code>git add data.js &amp;&amp; git commit -m "Oppdater prompt-kort" &amp;&amp; git push</code></div>
+      </div>
+    </div>
+    <div class="flow-line"></div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-content">
+        <div class="title">GitHub Pages bygger automatisk</div>
+        <div class="desc">GitHub Pages deployer endringen innen 1–3 minutter. Ingen manuell byggprosess.</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>9.2 Kompasset-publisering via admin-panel</h3>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-content">
+        <div class="title">Admin åpner Kompasset og logger inn med PIN</div>
+      </div>
+    </div>
+    <div class="flow-line"></div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-content">
+        <div class="title">Admin skriver inn GitHub PAT og repo-URL</div>
+        <div class="desc">Token lagres i <code>sessionStorage</code>. Repo-URL lagres i <code>localStorage</code>.</div>
+      </div>
+    </div>
+    <div class="flow-line"></div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-content">
+        <div class="title">Klikk «Publiser til GitHub»</div>
+        <div class="desc">JavaScript gjør en <code>PUT</code> til GitHub API: <code>https://api.github.com/repos/{repo}/contents/kompasset-data.js</code></div>
+      </div>
+    </div>
+    <div class="flow-line"></div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-content">
+        <div class="title">GitHub Pages deployer automatisk</div>
+        <div class="desc">Siden er oppdatert for alle brukere etter 1–3 minutter.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    GitHub PAT-en må ha <code>contents:write</code>-tilgang til repoet. En fine-grained token med tilgang til kun dette repoet anbefales.
+  </div>
+
+  <h3>9.3 GitHub Pages-oppsett</h3>
+  <table>
+    <tr><th>Innstilling</th><th>Verdi</th></tr>
+    <tr><td>Source</td><td>Branch: <code>master</code> (eller <code>main</code>), Root: <code>/</code></td></tr>
+    <tr><td>Custom domain</td><td>Valgfritt</td></tr>
+    <tr><td>HTTPS</td><td>Påkrevd (GitHub enforcer)</td></tr>
+    <tr><td>Build-type</td><td>Static (ingen Jekyll/Actions nødvendig)</td></tr>
+  </table>
+
+  <!-- 10 -->
+  <h2 id="intern-server">10. Migrering til intern webserver</h2>
+
+  <p>Siden det ikke finnes noen backend eller byggprosess, er migrering til intern server svært enkel.</p>
+
+  <h3>Steg-for-steg</h3>
+  <ol>
+    <li>Kopier alle filer fra repoet til webserveren (Apache, Nginx, IIS, SharePoint, m.m.)</li>
+    <li>Sørg for at <code>config.js</code> finnes (ikke i <code>.gitignore</code> på produksjonsserveren)</li>
+    <li>Verifiser at alle filer serveres med korrekt MIME-type (<code>text/html</code>, <code>text/javascript</code>, <code>text/css</code>)</li>
+    <li>Test at alle fire sider lastes korrekt</li>
+  </ol>
+
+  <h3>Hva som må tilpasses ved intern server</h3>
+  <table>
+    <tr><th>Funksjon</th><th>Status</th><th>Tiltak</th></tr>
+    <tr><td>Visning av sider</td><td style="color:#2e7d32;font-weight:700;">✓ Fungerer uten endringer</td><td>–</td></tr>
+    <tr><td>localStorage / brukerdata</td><td style="color:#2e7d32;font-weight:700;">✓ Fungerer uten endringer</td><td>–</td></tr>
+    <tr><td>Admin-panel (legge til kort)</td><td style="color:#2e7d32;font-weight:700;">✓ Fungerer uten endringer</td><td>–</td></tr>
+    <tr><td>Kompasset-publisering via GitHub API</td><td style="color:#e65100;font-weight:700;">⚠ Ikke aktuelt</td><td>Fjern GitHub-delen fra admin-UI, eller tilby filnedlasting i stedet</td></tr>
+    <tr><td>Oppdatering av datafiler</td><td style="color:#1565c0;font-weight:700;">→ Manuelt</td><td>Rediger <code>data.js</code> / <code>kompasset-data.js</code> og last opp til server via FTP/SCP/filbehandler</td></tr>
+  </table>
+
+  <div class="callout green">
+    <strong>Anbefalt arbeidsflyt på intern server:</strong> Admin eksporterer JSON fra admin-panel → rediger lokalt ved behov → last opp oppdatert <code>data.js</code> / <code>kompasset-data.js</code> til serveren.
+  </div>
+
+  <h3>IIS-spesifikt (Windows Server)</h3>
+  <ul>
+    <li>Legg til MIME-type for <code>.js</code>: <code>application/javascript</code> (er vanligvis allerede satt)</li>
+    <li>Ingen spesielle rewrite-regler nødvendig (ingen routing, kun statiske filer)</li>
+    <li>Sett opp HTTPS-sertifikat – anbefales selv på intern server</li>
+  </ul>
+
+  <!-- 11 -->
+  <h2 id="konfigurasjon">11. Konfigurasjon</h2>
+
+  <p>All konfigurasjon skjer i <code>config.js</code> via <code>CONFIG</code>-objektet:</p>
+
+  <pre>const CONFIG = {
+  ADMIN_PIN:    "2030",          // PIN for admin-panel — endre før produksjon
+  fogUnlockAt:  3,               // Antall øyer som må fullføres for å låse opp Kildebruk
+  copilotUrl:   "https://copilot.microsoft.com",  // Lenke til KI-tjeneste
+  siteName:     "KI i klasserommet",
+  siteSubtitle: "Praktiske prompt-kort for lærere i videregående",
+  kontakt:      ""               // Valgfri e-post/URL for kontaktlenke
+};</pre>
+
+  <div class="callout">
+    <code>config.example.js</code> inneholder et trygt mal-objekt. Bruk dette som utgangspunkt når du setter opp en ny instans, og aldri commit <code>config.js</code> med ekte PIN til et offentlig repo.
+  </div>
+
+  <!-- 12 -->
+  <h2 id="vedlikehold">12. Vedlikehold</h2>
+
+  <h3>Oppdatere prompt-kort (data.js)</h3>
+  <ol>
+    <li>Åpne <code>data.js</code> i teksteditor</li>
+    <li>Finn riktig øy i <code>ISLANDS</code>-arrayen</li>
+    <li>Legg til eller rediger et kort-objekt (se mal i toppen av filen)</li>
+    <li>Lagre med UTF-8, test lokalt, push til GitHub</li>
+  </ol>
+
+  <h3>Oppdatere fagkoder (udir.no)</h3>
+  <ol>
+    <li>Finn fagkoden i <code>FAG</code>-arrayen i <code>data.js</code></li>
+    <li>Oppdater <code>kode</code> og <code>udir</code>-feltet</li>
+    <li>Oppdater <code>kompetansemaal</code>-arrayen ved behov</li>
+  </ol>
+
+  <h3>Oppdatere Kompasset-innhold</h3>
+  <ul>
+    <li><strong>Via admin-panel:</strong> Innlogg → rediger/legg til tips → eksporter JSON → last opp <code>kompasset-data.js</code></li>
+    <li><strong>Direkte i fil:</strong> Rediger <code>kompasset-data.js</code>, følg eksisterende blokkstruktur (se §5.3)</li>
+  </ul>
+
+  <h3>Legge til ny øy</h3>
+  <ol>
+    <li>Legg til objekt i <code>ISLANDS</code>-arrayen i <code>data.js</code></li>
+    <li>Legg til tilhørende SVG-element i øykartet i <code>index.html</code></li>
+    <li>Oppdater <code>&lt;select id="av-island"&gt;</code> i admin-panelet</li>
+  </ol>
+
+  <div class="callout warn">
+    <strong>Viktig:</strong> Variabelnavnene i <code>data.js</code> (<code>const FAG</code>, <code>const ISLANDS</code> osv.) må ikke endres. Disse brukes direkte av JavaScript-logikken i HTML-filene.
+  </div>
+
+  <div style="margin-top:48px;padding-top:18px;border-top:1px solid #dde4f0;font-size:11px;color:#888;">
+    Dokumentet gjelder KI i klasserommet v3 &nbsp;·&nbsp; Sist oppdatert april 2026 &nbsp;·&nbsp; Intern bruk
+  </div>
+
+</div>
+</body>
+</html>
