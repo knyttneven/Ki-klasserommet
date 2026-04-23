@@ -776,12 +776,20 @@ function livePreview() {
     <div class="pc-foot"><span style="font-size:11px;color:var(--ink3);font-style:italic">Forhåndsvisning</span></div>
   </div>`;
 }
-function addCard() {
+async function addCard() {
   const t = document.getElementById('av-title').value.trim();
   const p = document.getElementById('av-prompt').value.trim();
   if (!t || !p) { alert('Fyll inn tittel og prompt.'); return; }
   const tags = document.getElementById('av-tags').value.split(',').map(s => s.trim()).filter(Boolean);
-  customCards.push({ id: 'c' + Date.now(), type: 'simple', island: document.getElementById('av-island').value, title: t, out: document.getElementById('av-out').value, doThis: document.getElementById('av-do').value, prompt: p, time: document.getElementById('av-time').value, tags });
+  const card = { id: 'c' + Date.now(), type: 'simple', island: document.getElementById('av-island').value, title: t, out: document.getElementById('av-out').value, doThis: document.getElementById('av-do').value, prompt: p, time: document.getElementById('av-time').value, tags };
+
+  if (window.writeKurskartCard) {
+    const ok = await window.writeKurskartCard(card);
+    if (!ok) customCards.push(card); // fallback to local on failure
+  } else {
+    customCards.push(card);
+  }
+
   renderAdminList();
   ['av-title','av-out','av-do','av-prompt','av-tags','av-udir','av-time'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('av-preview').innerHTML = '<div class="ap-preview-empty" style="color:var(--green);font-weight:600">Kort lagt til!</div>';
@@ -867,6 +875,17 @@ init();
   if (CONFIG.supabase.enableProgression) {
     loadProgression();
     window.onIslandUnlocked = saveProgression;
+  }
+
+  // ── WRITE ──
+  if (CONFIG.supabase.enableWrite) {
+    window.writeKurskartCard = async (card) => {
+      try {
+        const { error } = await supabase.from('kurskart_cards').insert(card);
+        if (!error) await fetchKurskartCards();
+        return !error;
+      } catch (e) { return false; }
+    };
   }
 </script>
 </body>

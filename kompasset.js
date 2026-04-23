@@ -588,7 +588,7 @@ function adminUploadImage(ev, blockIndex) {
   reader.readAsDataURL(file);
 }
 
-function adminSave(id) {
+async function adminSave(id) {
   const tittel = document.getElementById('ka-tittel').value.trim();
   const kategori = document.getElementById('ka-kategori').value;
   const minutter = parseInt(document.getElementById('ka-minutter').value) || 2;
@@ -614,6 +614,21 @@ function adminSave(id) {
   setTimeout(() => { msg.textContent = ''; msg.classList.remove('ok'); }, 2000);
 
   render();
+
+  if (CONFIG.supabase.enableWrite && erOverlay) {
+    try {
+      const { error } = await supabase.from('kompass_tips').upsert(
+        { id, kategori, tittel, ingress, oppdatert, minutter, innhold },
+        { onConflict: 'id' }
+      );
+      if (!error) {
+        const fresh = loadOverlay();
+        fresh.tips = (fresh.tips || []).filter(x => x.id !== id);
+        saveOverlay(fresh);
+        await fetchSupabaseTips();
+      }
+    } catch (e) { /* silent fallback — tip stays in overlay */ }
+  }
 }
 
 function adminExport() {
