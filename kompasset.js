@@ -626,6 +626,7 @@ async function adminSave(id) {
         fresh.tips = (fresh.tips || []).filter(x => x.id !== id);
         saveOverlay(fresh);
         await fetchSupabaseTips();
+        render();
       }
     } catch (e) { /* silent fallback — tip stays in overlay */ }
   }
@@ -683,14 +684,22 @@ async function fetchSupabaseTips() {
       minutter:  r.minutter  || 2,
       innhold:   Array.isArray(r.innhold) ? r.innhold : []
     }));
-    render();
   } catch (e) { /* full fallback — static data used as-is */ }
 }
 
 // ---------- INIT ----------
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  if (CONFIG.supabase.enableRead) await fetchSupabaseTips();
   render();
-  if (CONFIG.supabase.enableRead) fetchSupabaseTips();
+
+  // Expose navigation + admin functions to global scope (required for inline onclick handlers in module context)
+  Object.assign(window, {
+    goHome, openKategori, openTips, onSearch,
+    openAdmin, closeAdmin, tryUnlockAdmin, showAdminPanel,
+    renderAdminList, adminNew, adminDelete, adminEdit,
+    adminSave, adminAddBlock, adminRemoveBlock, adminMoveBlock,
+    adminUploadImage, adminExport, adminImport, ghPublish
+  });
 
   // ESC lukker admin
   document.addEventListener('keydown', (e) => {
