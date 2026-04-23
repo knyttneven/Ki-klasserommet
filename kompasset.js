@@ -6,6 +6,12 @@
 // Admin-endringer lagres i localStorage som en "overlay" over KOMPASS_TIPS.
 // Publikum ser alltid: startdata MERGET med overlay.
 
+
+
+import { CONFIG } from "./config.js";
+``
+import { supabase } from "./supabase-client.js";
+
 const LS_KOMPASS = 'kompass_overlay_v1';
 
 function loadOverlay() {
@@ -23,7 +29,7 @@ function allTips() {
   const base = KOMPASS_TIPS
     .filter(t => !o.slettet.includes(t.id))
     .map(t => o.endret[t.id] ? { ...t, ...o.endret[t.id] } : t);
-  return [...base, ...(o.tips || [])];
+  return [...base, ...(o.tips || []), ...supabaseTips];
 }
 
 function tipsByKategori(kid) {
@@ -39,6 +45,7 @@ let currentKategori = null;
 let currentTipsId = null;
 let adminOn = false;
 let searchQ = '';
+let supabaseTips = [];
 
 // ---------- HELPERS ----------
 function esc(s) {
@@ -647,9 +654,28 @@ function adminImport(file) {
   reader.readAsText(file);
 }
 
+// ---------- SUPABASE READ ----------
+async function fetchSupabaseTips() {
+  try {
+    const { data, error } = await supabase.from('kompass_tips').select('*');
+    if (error || !data) return;
+    supabaseTips = data.map(r => ({
+      id:        r.id,
+      kategori:  r.kategori,
+      tittel:    r.tittel,
+      ingress:   r.ingress   || '',
+      oppdatert: r.oppdatert || '',
+      minutter:  r.minutter  || 2,
+      innhold:   Array.isArray(r.innhold) ? r.innhold : []
+    }));
+    render();
+  } catch (e) { /* full fallback — static data used as-is */ }
+}
+
 // ---------- INIT ----------
 document.addEventListener('DOMContentLoaded', () => {
   render();
+  if (CONFIG.supabase.enableRead) fetchSupabaseTips();
 
   // ESC lukker admin
   document.addEventListener('keydown', (e) => {

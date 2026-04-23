@@ -453,7 +453,8 @@ function openZoom() {
   const completedOnIsland = isl.cards.filter(c => c.type === 'simple' && state.completed[c.id]).length;
   const remaining = Math.max(0, isl.wizardUnlockAt - completedOnIsland);
 
-  const allCards = [...isl.cards, ...customCards.filter(c => parseInt(c.island) === activeIsland)];
+  const sbCards = (window.supabaseKurskartCards || []).filter(c => parseInt(c.island) === activeIsland);
+  const allCards = [...isl.cards, ...customCards.filter(c => parseInt(c.island) === activeIsland), ...sbCards];
   document.getElementById('zv-cards').innerHTML = allCards.map(c => renderCard(c, isl, wizUnlocked, remaining)).join('');
 
   document.getElementById('zoom-view').classList.add('open');
@@ -800,6 +801,31 @@ document.getElementById('admin-overlay').addEventListener('click', e => { if (e.
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (document.getElementById('zoom-view').classList.contains('open')) closeZoom(); else if (document.getElementById('save-modal').classList.contains('open')) closeSaveModal(); else if (document.getElementById('admin-overlay').classList.contains('open')) closeAdmin(); } });
 
 init();
+</script>
+
+<script type="module">
+  import { CONFIG } from "./config.js";
+  import { supabase } from "./supabase-client.js";
+
+  async function fetchKurskartCards() {
+    try {
+      const { data, error } = await supabase.from('kurskart_cards').select('*');
+      if (error || !data) return;
+      window.supabaseKurskartCards = data.map(r => ({
+        id:     r.id,
+        type:   r.type   || 'simple',
+        island: r.island,
+        title:  r.title,
+        out:    r.out    || '',
+        doThis: r.doThis || '',
+        prompt: r.prompt || '',
+        time:   r.time   || '2 min',
+        tags:   Array.isArray(r.tags) ? r.tags : []
+      }));
+    } catch (e) { /* full fallback — static cards used as-is */ }
+  }
+
+  if (CONFIG.supabase.enableRead) fetchKurskartCards();
 </script>
 </body>
 </html>
