@@ -435,17 +435,7 @@ window.applyIslandsDone = (ids) => { ids.forEach(id => { state.islandsDone[id] =
 
 // ── INIT ──
 function init() {
-  if (CONFIG.kontakt) document.getElementById('footer-kontakt').textContent = CONFIG.kontakt;
-  updateBankBadge();
-  recalcProgress();
-  const lockEl = document.getElementById('fog-lock');
-  if (lockEl) {
-    const t = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-    t.textContent = `Låst – fullfør ${CONFIG.fogUnlockAt} øyer for å åpne Kildebruk`;
-    lockEl.insertBefore(t, lockEl.firstChild);
-  }
-
-  // Padlocks for islands 1–4 (island 0 always unlocked, island 5 has fog-lock)
+  // Padlocks must exist before recalcProgress() calls updateMapVisuals()
   const LOCK_POS = [null, {cx:278,cy:158}, {cx:404,cy:154}, {cx:412,cy:264}, {cx:258,cy:300}];
   const SVG_NS = 'http://www.w3.org/2000/svg';
   LOCK_POS.forEach((pos, i) => {
@@ -479,13 +469,24 @@ function init() {
     g.appendChild(path);
     islGrp.appendChild(g);
   });
+
+  if (CONFIG.kontakt) document.getElementById('footer-kontakt').textContent = CONFIG.kontakt;
+  updateBankBadge();
+  recalcProgress();
+
+  const lockEl = document.getElementById('fog-lock');
+  if (lockEl) {
+    const t = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+    t.textContent = `Låst – fullfør ${CONFIG.fogUnlockAt} øyer for å åpne Kildebruk`;
+    lockEl.insertBefore(t, lockEl.firstChild);
+  }
 }
 
 // ── ISLAND SELECTION ──
 function selectIsland(i) {
   activeIsland = i;
   const isl = ISLANDS[i];
-  const locked = i === 5 ? isl.status === 'locked' : !(islandUnlocked[i] ?? true);
+  const locked = i === 5 ? isl.status === 'locked' : !(islandUnlocked[i] ?? false);
   document.getElementById('ms-title').textContent = isl.name;
   document.getElementById('ms-sub').textContent = isl.desc;
   const btn = document.getElementById('ms-open-btn');
@@ -498,7 +499,7 @@ function selectIsland(i) {
 
 // ── ZOOM VIEW ──
 function openZoom() {
-  const islLocked = activeIsland === 5 ? ISLANDS[5].status === 'locked' : !(islandUnlocked[activeIsland] ?? true);
+  const islLocked = activeIsland === 5 ? ISLANDS[5].status === 'locked' : !(islandUnlocked[activeIsland] ?? false);
   if (activeIsland === null || islLocked) return;
   const isl = ISLANDS[activeIsland];
   document.getElementById('zv-name').textContent = isl.name;
@@ -688,9 +689,7 @@ function recalcProgress() {
     if (adminMode) return true;
     if (i === 0) return true;
     if (i === 5) return ISLANDS[5].status === 'open';
-    const prev = ISLANDS[i - 1];
-    const prevDone = prev.cards.filter(c => c.type === 'simple' && state.completed[c.id]).length;
-    return prevDone >= ISLAND_UNLOCK_THRESHOLD;
+    return completedPromptsInIsland(ISLANDS[i - 1].id) >= ISLAND_UNLOCK_THRESHOLD;
   });
 
   updateMapVisuals();
@@ -714,12 +713,12 @@ const ISL_COLOURS = [
 
 function updateMapVisuals() {
   // Find the first unlocked non-done island (the 'active' one)
-  const activeId = ISLANDS.findIndex((isl, i) => i < 5 && (islandUnlocked[i] ?? true) && !state.islandsDone[isl.id]);
+  const activeId = ISLANDS.findIndex((isl, i) => i < 5 && (islandUnlocked[i] ?? false) && !state.islandsDone[isl.id]);
 
   ISLANDS.forEach((isl, i) => {
     if (i === 5) return; // Kildebruk handled by fog logic separately
     const isDone = state.islandsDone[isl.id];
-    const unlocked = islandUnlocked[i] ?? true;
+    const unlocked = islandUnlocked[i] ?? false;
     const isActive = (i === activeId);
     const col = ISL_COLOURS[i];
 
@@ -757,6 +756,12 @@ function checkWizardUnlock(islId) {
   if (!isl || isl.wizardUnlockAt === 0) return;
   const completedCount = isl.cards.filter(c => c.type === 'simple' && state.completed[c.id]).length;
   if (completedCount >= isl.wizardUnlockAt) state.wizardUnlocked[islId] = true;
+}
+
+function completedPromptsInIsland(islandId) {
+  const isl = ISLANDS.find(isl => isl.id === islandId);
+  if (!isl) return 0;
+  return isl.cards.filter(c => c.type === 'simple' && state.completed[c.id]).length;
 }
 
 // ── COPY & COPILOT ──
