@@ -65,7 +65,7 @@
 <div class="page">
 
   <h1>KI i klasserommet — Teknisk beskrivelse</h1>
-  <div class="meta">Versjon 3 &nbsp;·&nbsp; April 2026 &nbsp;·&nbsp; Intern dokumentasjon for utviklere og driftsansvarlige</div>
+  <div class="meta">Versjon 3.1 &nbsp;·&nbsp; April 2026 &nbsp;·&nbsp; Intern dokumentasjon for utviklere og driftsansvarlige</div>
 
   <div class="toc">
     <h3>Innhold</h3>
@@ -86,17 +86,19 @@
   <!-- 1 -->
   <h2 id="oversikt">1. Prosjektoversikt</h2>
   <p><strong>KI i klasserommet</strong> er et nettbasert kursverktøy for lærere i videregående skole. Formålet er å gjøre Microsoft Copilot praktisk og tilgjengelig gjennom prompt-kort, en faglig veiviser, en personlig prompt-bank og en veiledningsportal (Kompasset).</p>
-  <p>Løsningen er bygget som en <strong>ren statisk nettside</strong> uten backend, database eller build-prosess. Den kan hostes på GitHub Pages, intern webserver, SharePoint, eller ethvert filbasert webhosting-miljø.</p>
+  <p>Løsningen er bygget som en <strong>statisk nettside</strong> uten byggprosess og kan hostes på GitHub Pages, intern webserver, SharePoint, eller ethvert filbasert webhosting-miljø. I versjon 3 er det lagt til en valgfri tilkobling til <strong>Supabase</strong> for delt innhold, anonym progresjonssporing og moderert brukerbidrag. En liten serverless backend håndterer sikker admin-sletting.</p>
+  <div class="callout green">Alle Supabase-funksjoner er styrt av feature flags i <code>config.js</code> og er slått av som standard. Systemet fungerer fullt ut uten dem — statiske filer er alltid grunnlaget.</div>
 
   <table>
     <tr><th>Egenskap</th><th>Verdi</th></tr>
     <tr><td>Målgruppe</td><td>Lærere i videregående skole</td></tr>
     <tr><td>Primær KI-tjeneste</td><td>Microsoft Copilot</td></tr>
     <tr><td>Hosting (standard)</td><td>GitHub Pages</td></tr>
-    <tr><td>Backend</td><td>Ingen</td></tr>
+    <tr><td>Delt datalagring (valgfritt)</td><td>Supabase (PostgreSQL, RLS)</td></tr>
+    <tr><td>Backend (valgfritt)</td><td>Serverless-funksjon for admin-sletting</td></tr>
     <tr><td>Rammeverk</td><td>Ingen (vanilla)</td></tr>
     <tr><td>Byggesystem</td><td>Ingen</td></tr>
-    <tr><td>Avhengigheter</td><td>Ingen npm/node-pakker</td></tr>
+    <tr><td>npm-avhengigheter</td><td>Ingen (Supabase SDK lastes via CDN)</td></tr>
   </table>
 
   <!-- 2 -->
@@ -107,13 +109,15 @@
     <tr><td>Markup</td><td>HTML5</td><td>Living Standard</td></tr>
     <tr><td>Stil</td><td>CSS3 – egendefinerte variabler, Grid, Flexbox</td><td>Ingen preprocessor</td></tr>
     <tr><td>Logikk</td><td>Vanilla JavaScript (ES2020+)</td><td>Moderne nettlesere</td></tr>
-    <tr><td>Data</td><td>JavaScript-objekter (IIFE-fritt, globale variabler)</td><td>.js datafiler</td></tr>
-    <tr><td>Lagring</td><td>localStorage / sessionStorage</td><td>Nettlesernativt</td></tr>
-    <tr><td>Publisering</td><td>GitHub REST API v3</td><td>Kun Kompasset</td></tr>
+    <tr><td>Data</td><td>JavaScript-objekter (ES-modul + globale variabler)</td><td>.js datafiler</td></tr>
+    <tr><td>Klientlagring</td><td>localStorage / sessionStorage</td><td>Nettlesernativt</td></tr>
+    <tr><td>Delt lagring (valgfritt)</td><td>Supabase (PostgreSQL + RLS, anon-nøkkel)</td><td>CDN ESM-import</td></tr>
+    <tr><td>Admin-backend (valgfritt)</td><td>Serverless-funksjon (Node/Vercel)</td><td>POST-endepunkt</td></tr>
+    <tr><td>GitHub-publisering</td><td>GitHub REST API v3</td><td>Kun Kompasset</td></tr>
   </table>
 
   <div class="callout">
-    Ingen transpilering, ingen bundling. Alle filer kan redigeres direkte i et tekstredigeringsprogram og lastes opp til server uten byggsteg.
+    Ingen transpilering, ingen bundling. Alle filer kan redigeres direkte i et tekstredigeringsprogram og lastes opp til server uten byggsteg. Supabase SDK lastes fra CDN og krever ingen lokal installasjon.
   </div>
 
   <!-- 3 -->
@@ -129,13 +133,17 @@
 ├── style.css           ← Felles stilark (CSS-variabler, topbar, modal, kort)
 ├── kompasset.css       ← Stilark spesifikt for Kompasset
 │
-├── config.js           ← Konfigurasjon (PIN, sitenavn, Copilot-URL)
+├── config.js           ← Konfigurasjon (PIN, sitenavn, Copilot-URL, Supabase-flagg)
 ├── config.example.js   ← Mal for ny instans (commit-sikker)
 │
 ├── data.js             ← Alt innhold: øyer, prompt-kort, fag, kompetansemål
 ├── kompasset-data.js   ← Veiledningsinnhold: kategorier og tips-blokker
+├── kompasset.js        ← All logikk for Kompasset-siden (ES-modul)
+├── supabase-client.js  ← Supabase-klientinstans (anon-nøkkel, CDN-import)
 │
-└── kompasset.js        ← All logikk for Kompasset-siden</pre>
+└── backend/
+    ├── admin-delete.js     ← Serverless admin-endepunkt (Vercel/Node)
+    └── .env.example        ← Mal for miljøvariabler (aldri commit .env)</pre>
 
   <div class="callout warn">
     <code>config.js</code> inneholder admin-PIN og er i <code>.gitignore</code> på nye installasjoner. Bruk <code>config.example.js</code> som mal og legg til <code>config.js</code> lokalt.
@@ -148,11 +156,15 @@
   <p>Hovelsiden. Viser et interaktivt øykart med 6 tematiske «øyer» (Kom i gang, Undervisning, Vurdering, Tilpasset opplæring, Koding, Kildebruk). Hver øy inneholder prompt-kort som lastes fra <code>data.js</code>.</p>
   <ul>
     <li>Øyer rendres som SVG-elementer; klikk åpner en zoom-visning med kortliste</li>
-    <li>«Kildebruk»-øyen er låst bak en tåkemekanikk (fog-of-war) og åpnes etter <code>CONFIG.fogUnlockAt</code> fullførte kapitler</li>
-    <li>Fremdrift lagres i <code>localStorage</code> under nøkkelen <code>ki-state</code></li>
+    <li>«Kildebruk»-øyen er skjult bak en <strong>tåke-mekanisme</strong> (fog-of-war) — aktivert som standard for alle vanlige brukere</li>
+    <li>Tåken løftes automatisk når brukeren har fullført <code>CONFIG.fogUnlockAt</code> kapitler, eller umiddelbart i admin-modus</li>
+    <li>Brukere kan valgfritt aktivere <strong>«Se hele kartet»</strong> — en lokal oversiktsmodus lagret i <code>localStorage</code> som ikke påvirker andre</li>
+    <li>Kartet er scrollbart og pannerbart; brukere trenger ikke bruke nettleser-zoom for å se innholdet</li>
+    <li>Fremdrift lagres i <code>localStorage</code> under nøkkelen <code>ki-state</code>; ved Supabase-aktivering også i <code>kurs_progresjon</code> via pseudo-ID</li>
+    <li>Hver bruker har individuell progresjon — fullføring på én enhet reflekteres ikke på en annen</li>
     <li>Prompt-kort kan lagres til «Min bank» via modal</li>
     <li>Inneholder admin-panel (PIN-beskyttet, se §7)</li>
-    <li>Laster: <code>config.js</code> → <code>data.js</code> → inline <code>&lt;script&gt;</code></li>
+    <li>Laster: <code>config.js</code> → <code>data.js</code> → inline <code>&lt;script&gt;</code> + <code>&lt;script type="module"&gt;</code></li>
   </ul>
 
   <h3>4.2 veiviser.html — Veiviseren</h3>
@@ -223,34 +235,51 @@
   <!-- 6 -->
   <h2 id="lagring">6. Lagring og tilstand</h2>
 
+  <h3>6.1 Klientlagring (alltid aktiv)</h3>
   <table>
     <tr><th>Nøkkel</th><th>Lager</th><th>Innhold</th></tr>
     <tr><td><code>ki-state</code></td><td>localStorage</td><td>Fremdrift: fullførte kort, fullførte øyer, låste veivisere</td></tr>
     <tr><td><code>ki-bank</code></td><td>localStorage</td><td>Array av lagrede prompts med navn og tidsstempel</td></tr>
     <tr><td><code>ki-kompasset</code></td><td>localStorage</td><td>Admin-overlay for Kompasset (endringer på toppen av startdata)</td></tr>
+    <tr><td><code>ki-progress-id</code></td><td>localStorage</td><td>Anonymt pseudo-ID for Supabase-progresjon (generert én gang)</td></tr>
     <tr><td><code>kg_gh_repo</code></td><td>localStorage</td><td>GitHub-repo-URL for Kompasset-publisering</td></tr>
     <tr><td><code>kg_gh_token</code></td><td>sessionStorage</td><td>GitHub Personal Access Token (slettes ved fane-lukking)</td></tr>
   </table>
 
+  <h3>6.2 Delt lagring via Supabase (valgfritt)</h3>
+  <p>Når Supabase-funksjonalitet er aktivert i <code>config.js</code>, brukes følgende tabeller i tillegg til klientlagring:</p>
+  <table>
+    <tr><th>Tabell</th><th>Innhold</th><th>Hvem kan skrive</th></tr>
+    <tr><td><code>kompass_tips</code></td><td>Brukerbidrag til Kompasset</td><td>Alle (anonymt)</td></tr>
+    <tr><td><code>kurskart_cards</code></td><td>Brukerbidrag til Kurskartet</td><td>Alle (anonymt)</td></tr>
+    <tr><td><code>kurs_progresjon</code></td><td>Øy-progresjon knyttet til pseudo-ID</td><td>Eier av pseudo-ID</td></tr>
+  </table>
+  <p>Supabase bruker <strong>Row Level Security (RLS)</strong>: lesing og skriving er tillatt uten innlogging; sletting krever serversiden admin-endepunkt med <code>service_role</code>-nøkkel.</p>
+
   <div class="callout warn">
-    All brukerdata er lokalt i nettleseren. Det finnes ingen server-synkronisering. Lærere bør eksportere <code>.txt</code>-filer fra «Min bank» for sikker lagring.
+    <strong>Min bank</strong> er kun lagret lokalt i nettleseren og synkroniseres ikke mellom enheter. Eksporter <code>.txt</code>-filer for sikker langstidslagring. Øy-progresjon via Supabase er knyttet til denne nettleseren og dette tilfeldig genererte pseudo-IDet — sletting av nettleserdata fjerner koblingen.
   </div>
 
   <!-- 7 -->
-  <h2 id="admin">7. Admin-panel</h2>
+  <h2 id="admin">7. Admin-panel og moderering</h2>
   <p>Admin-panelet er tilgjengelig på alle sider. Aktiveres ved å klikke på logoen 3 ganger raskt, eller via «Admin»-knappen (skjult by default).</p>
 
   <h3>Funksjonalitet</h3>
   <ul>
-    <li><strong>Kurskartet:</strong> Legg til egne prompt-kort; eksporter oppdatert <code>data.js</code> / JSON</li>
+    <li><strong>Kurskartet:</strong> Legg til egne prompt-kort; eksporter oppdatert JSON</li>
     <li><strong>Kompasset:</strong> Legg til/rediger/slett tips; last opp bilder; importer/eksporter JSON; publiser <code>kompasset-data.js</code> direkte til GitHub via API</li>
+    <li><strong>Moderering (Supabase):</strong> Slett brukerbidrag fra Kompasset og Kurskartet via sikker sletting gjennom backend-endepunkt</li>
   </ul>
 
   <h3>PIN-kode</h3>
   <p>PIN settes i <code>config.js</code> under <code>ADMIN_PIN</code>. Standard er <code>"2030"</code> – endre dette før produksjonssetting.</p>
 
+  <h3>Sikker sletting av Supabase-bidrag</h3>
+  <p>Brukerbidrag som er lagret i Supabase kan ikke slettes direkte fra nettleseren — det blokkeres av Row Level Security. I stedet sendes en forespørsel til et eget backend-endepunkt (<code>adminDeleteUrl</code> i <code>config.js</code>). Admin oppgir et separat admin-passord som verifiseres på serveren. Bare ved korrekt passord utfører serveren slettingen på vegne av admin.</p>
+  <p>Dette betyr at Supabase-nøkkelen med fulle rettigheter aldri eksponeres i nettleseren.</p>
+
   <div class="callout warn">
-    Admin-PIN er ikke kryptering og gir ikke sikkerhet mot teknisk kyndige brukere som inspiserer kildekoden. Panelet er ment for å hindre utilsiktet redigering, ikke for å beskytte sensitiv informasjon.
+    Admin-PIN er ikke kryptering og gir ikke sikkerhet mot teknisk kyndige brukere som inspiserer kildekoden. Panelet er ment for å hindre utilsiktet redigering. Admin-passordet for Supabase-sletting er separat og lagres kun som miljøvariabel på serveren — aldri i kodebasen.
   </div>
 
   <!-- 8 -->
@@ -299,22 +328,25 @@
       </div>
     </div>
 
-    <div style="display:flex;gap:16px;margin-bottom:14px;">
-      <div style="flex:1;border:2px dashed #66bb6a;border-radius:8px;padding:12px 14px;position:relative;">
+    <div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;border:2px dashed #66bb6a;border-radius:8px;padding:12px 14px;position:relative;">
         <span style="position:absolute;top:-10px;left:12px;background:#f0f4ff;padding:0 6px;font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.05em;">Klientlagring</span>
         <div style="margin-top:4px;">
           <div><strong>localStorage</strong></div>
-          <div style="font-size:11px;color:#555;">ki-state &nbsp;·&nbsp; ki-bank &nbsp;·&nbsp; ki-kompasset &nbsp;·&nbsp; kg_gh_repo</div>
+          <div style="font-size:11px;color:#555;">ki-state &nbsp;·&nbsp; ki-bank &nbsp;·&nbsp; ki-kompasset &nbsp;·&nbsp; ki-progress-id &nbsp;·&nbsp; kg_gh_repo</div>
           <div style="margin-top:6px;"><strong>sessionStorage</strong></div>
           <div style="font-size:11px;color:#555;">kg_gh_token (GitHub PAT – slettes ved fane-lukking)</div>
         </div>
       </div>
-      <div style="flex:1;border:2px dashed #ffb74d;border-radius:8px;padding:12px 14px;position:relative;">
-        <span style="position:absolute;top:-10px;left:12px;background:#f0f4ff;padding:0 6px;font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.05em;">Ekstern API (valgfritt)</span>
+      <div style="flex:1;min-width:200px;border:2px dashed #ffb74d;border-radius:8px;padding:12px 14px;position:relative;">
+        <span style="position:absolute;top:-10px;left:12px;background:#f0f4ff;padding:0 6px;font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.05em;">Eksterne tjenester (valgfritt)</span>
         <div style="margin-top:4px;">
-          <div><strong>GitHub REST API</strong></div>
-          <div style="font-size:11px;color:#555;">Kun brukt av Kompasset-admin for å skrive kompasset-data.js til GitHub-repo</div>
-          <div style="margin-top:6px;font-size:11px;color:#888;">Ikke nødvendig for vanlig bruk</div>
+          <div><strong>Supabase</strong> <span style="font-size:10px;background:#e8f5e9;color:#2e7d32;padding:1px 6px;border-radius:10px;font-weight:700;">NY</span></div>
+          <div style="font-size:11px;color:#555;">Delt innhold, brukerforslag, anonym progresjon (RLS, anon-nøkkel)</div>
+          <div style="margin-top:6px;"><strong>Backend-endepunkt</strong> <span style="font-size:10px;background:#e8f5e9;color:#2e7d32;padding:1px 6px;border-radius:10px;font-weight:700;">NY</span></div>
+          <div style="font-size:11px;color:#555;">Sikker admin-sletting via service_role (Vercel/Node)</div>
+          <div style="margin-top:6px;"><strong>GitHub REST API</strong></div>
+          <div style="font-size:11px;color:#555;">Kun for Kompasset-publisering direkte fra admin-panel</div>
         </div>
       </div>
     </div>
@@ -458,17 +490,27 @@ kompasset.js    ←  Leser variablene fra de tre filene over
 
   <p>All konfigurasjon skjer i <code>config.js</code> via <code>CONFIG</code>-objektet:</p>
 
-  <pre>const CONFIG = {
+  <pre>export const CONFIG = {
   ADMIN_PIN:    "2030",          // PIN for admin-panel — endre før produksjon
-  fogUnlockAt:  3,               // Antall øyer som må fullføres for å låse opp Kildebruk
-  copilotUrl:   "https://copilot.microsoft.com",  // Lenke til KI-tjeneste
+  fogUnlockAt:  3,               // Øyer som må fullføres for å låse opp Kildebruk
+  copilotUrl:   "https://copilot.microsoft.com",
   siteName:     "KI i klasserommet",
   siteSubtitle: "Praktiske prompt-kort for lærere i videregående",
-  kontakt:      ""               // Valgfri e-post/URL for kontaktlenke
+  kontakt:      "",              // Valgfri e-post/URL for kontaktlenke
+
+  adminDeleteUrl: "",            // URL til deployert backend/admin-delete.js
+
+  supabase: {
+    enableRead:        false,    // Les delt innhold fra Supabase
+    enableWrite:       false,    // Skriv brukerforslag til Supabase
+    enableProgression: false     // Lagre øy-progresjon i Supabase
+  }
 };</pre>
 
+  <p>Supabase-flaggene er alle <code>false</code> som standard. Sett dem til <code>true</code> én etter én når du er klar til å aktivere funksjonaliteten. <code>adminDeleteUrl</code> settes til URL-en for det deployerte backend-endepunktet.</p>
+
   <div class="callout">
-    <code>config.example.js</code> inneholder et trygt mal-objekt. Bruk dette som utgangspunkt når du setter opp en ny instans, og aldri commit <code>config.js</code> med ekte PIN til et offentlig repo.
+    <code>config.js</code> er en ES-modul (<code>export const CONFIG</code>) og lastes med <code>import</code> i modul-scripts. Merk at <code>config.js</code> er committet til repoet — legg aldri sensitiv informasjon her utover admin-PIN. Backend-hemmeligheter (Supabase service_role-nøkkel, admin-passord) lagres kun som miljøvariabler på serveren.
   </div>
 
   <!-- 12 -->
@@ -507,7 +549,7 @@ kompasset.js    ←  Leser variablene fra de tre filene over
   </div>
 
   <div style="margin-top:48px;padding-top:18px;border-top:1px solid #dde4f0;font-size:11px;color:#888;">
-    Dokumentet gjelder KI i klasserommet v3 &nbsp;·&nbsp; Sist oppdatert april 2026 &nbsp;·&nbsp; Intern bruk
+    Dokumentet gjelder KI i klasserommet v3.1 &nbsp;·&nbsp; Sist oppdatert april 2026 &nbsp;·&nbsp; Intern bruk
   </div>
 
 </div>

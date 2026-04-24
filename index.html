@@ -250,6 +250,7 @@ body { display: flex; align-items: stretch; justify-content: center; }
           <div class="section-lbl">Kildebruk-tåke</div>
           <div class="ms-fog-txt" id="ms-fog-txt">Fullfør 3 kapitler for å åpne Kildebruk</div>
           <div class="ms-fog-track"><div class="ms-fog-fill" id="ms-fog-fill" style="width:0%"></div></div>
+          <button id="fog-toggle-btn" onclick="toggleFogOverride()" style="display:none;margin-top:.5rem;font-size:11px;color:var(--blue);background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;text-align:left">Se hele kartet</button>
         </div>
         <div class="ms-hint" id="ms-hint">Stiene viser anbefalt rekkefølge – men du bestemmer selv.</div>
       </div>
@@ -580,6 +581,34 @@ function tickDone(cardId, islId, checked) {
   if (activeIsland !== null) openZoom();
 }
 
+// ── FOG OF WAR ──
+function applyFogState(done) {
+  const override = localStorage.getItem('ki-fog-override') === '1';
+  const lifted = done >= CONFIG.fogUnlockAt || adminMode || override;
+  const FOG_INIT = { 'fog-body': '.9', fog1: '.8', fog2: '.8', fog3: '.65' };
+  Object.entries(FOG_INIT).forEach(([id, init]) => {
+    const el = document.getElementById(id);
+    if (el) el.setAttribute('opacity', lifted ? '0.06' : init);
+  });
+  const lock = document.getElementById('fog-lock');
+  if (lock) lock.setAttribute('opacity', lifted ? '0' : '1');
+  ISLANDS[5].status = lifted ? 'open' : 'locked';
+  document.getElementById('ms-fog-txt').textContent = lifted
+    ? 'Kildebruk er nå tilgjengelig!'
+    : `Fullfør ${CONFIG.fogUnlockAt} kapitler for å åpne Kildebruk (${done}/${CONFIG.fogUnlockAt})`;
+  const btn = document.getElementById('fog-toggle-btn');
+  if (btn) {
+    btn.style.display = (done >= CONFIG.fogUnlockAt || adminMode) ? 'none' : '';
+    btn.textContent = override ? 'Skjul tåken igjen' : 'Se hele kartet';
+  }
+}
+
+function toggleFogOverride() {
+  const on = localStorage.getItem('ki-fog-override') === '1';
+  if (on) localStorage.removeItem('ki-fog-override'); else localStorage.setItem('ki-fog-override', '1');
+  recalcProgress();
+}
+
 function recalcProgress() {
   let done = 0;
   let newUnlock = false;
@@ -600,16 +629,7 @@ function recalcProgress() {
 
   const fogPct = Math.min(Math.round(done / CONFIG.fogUnlockAt * 100), 100);
   document.getElementById('ms-fog-fill').style.width = fogPct + '%';
-  if (fogPct >= 100) {
-    ['fog1','fog2','fog3','fog-body'].forEach(id => {
-      const el = document.getElementById(id); if (el) el.setAttribute('opacity', '0.06');
-    });
-    const lock = document.getElementById('fog-lock'); if (lock) lock.setAttribute('opacity','0');
-    ISLANDS[5].status = 'open';
-    document.getElementById('ms-fog-txt').textContent = 'Kildebruk er nå tilgjengelig!';
-  } else {
-    document.getElementById('ms-fog-txt').textContent = `Fullfør ${CONFIG.fogUnlockAt} kapitler for å åpne Kildebruk (${done}/${CONFIG.fogUnlockAt})`;
-  }
+  applyFogState(done);
 
   updateMapVisuals();
   if (newUnlock && typeof window.onIslandUnlocked === 'function') window.onIslandUnlocked();
