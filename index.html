@@ -224,8 +224,9 @@ body { display: flex; align-items: stretch; justify-content: center; }
           <ellipse cx="114" cy="318" rx="22" ry="12" fill="#dceef8" id="fog2" opacity=".8"/>
           <ellipse cx="100" cy="322" rx="30" ry="16" fill="#d0e4f0" id="fog3" opacity=".65"/>
           <g id="fog-lock">
-            <rect x="93" y="312" width="14" height="10" rx="2" fill="#8090a0" stroke="#f0ece0" stroke-width="1.2"/>
-            <path d="M96 312 v-3 a4 4 0 0 1 8 0 v3" stroke="#8090a0" stroke-width="1.6" fill="none"/>
+            <circle cx="100" cy="317" r="11" fill="#3a4c5c" stroke="#f0ece0" stroke-width="1.5"/>
+            <rect x="94" y="315" width="12" height="8" rx="2" fill="#e8eff5"/>
+            <path d="M97 315 v-3 a3 3 0 0 1 6 0 v3" stroke="#e8eff5" stroke-width="1.5" fill="none"/>
           </g>
           <text x="100" y="346" text-anchor="middle" font-size="10" font-family="Georgia,serif" font-weight="700" fill="#506070" opacity=".65">Kildebruk</text>
         </g>
@@ -435,6 +436,12 @@ function init() {
   if (CONFIG.kontakt) document.getElementById('footer-kontakt').textContent = CONFIG.kontakt;
   updateBankBadge();
   recalcProgress();
+  const lockEl = document.getElementById('fog-lock');
+  if (lockEl) {
+    const t = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+    t.textContent = `Låst – fullfør ${CONFIG.fogUnlockAt} øyer for å åpne Kildebruk`;
+    lockEl.insertBefore(t, lockEl.firstChild);
+  }
 }
 
 // ── ISLAND SELECTION ──
@@ -584,16 +591,17 @@ function tickDone(cardId, islId, checked) {
 // ── FOG OF WAR ──
 function applyFogState(done) {
   const override = localStorage.getItem('ki-fog-override') === '1';
-  const lifted = done >= CONFIG.fogUnlockAt || adminMode || override;
+  const fogLifted    = done >= CONFIG.fogUnlockAt || adminMode || override;
+  const statusLifted = done >= CONFIG.fogUnlockAt || adminMode;
   const FOG_INIT = { 'fog-body': '.9', fog1: '.8', fog2: '.8', fog3: '.65' };
   Object.entries(FOG_INIT).forEach(([id, init]) => {
     const el = document.getElementById(id);
-    if (el) el.setAttribute('opacity', lifted ? '0.06' : init);
+    if (el) el.setAttribute('opacity', fogLifted ? '0.06' : init);
   });
   const lock = document.getElementById('fog-lock');
-  if (lock) lock.setAttribute('opacity', lifted ? '0' : '1');
-  ISLANDS[5].status = lifted ? 'open' : 'locked';
-  document.getElementById('ms-fog-txt').textContent = lifted
+  if (lock) lock.setAttribute('opacity', statusLifted ? '0' : '1');
+  ISLANDS[5].status = statusLifted ? 'open' : 'locked';
+  document.getElementById('ms-fog-txt').textContent = statusLifted
     ? 'Kildebruk er nå tilgjengelig!'
     : `Fullfør ${CONFIG.fogUnlockAt} kapitler for å åpne Kildebruk (${done}/${CONFIG.fogUnlockAt})`;
   const btn = document.getElementById('fog-toggle-btn');
