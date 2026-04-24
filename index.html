@@ -216,7 +216,7 @@ body { display: flex; align-items: stretch; justify-content: center; }
           </g>
         </g>
         <!-- Island 5: Kildebruk (fog/locked) -->
-        <g class="isl" onclick="selectIsland(5)" tabindex="0" role="button" aria-label="Kildebruk – låst"
+        <g class="isl" id="isl-g-5" onclick="selectIsland(5)" tabindex="-1" role="button" aria-label="Kildebruk – låst"
            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectIsland(5)}">
           <ellipse cx="100" cy="322" rx="36" ry="18" fill="#8090a0" opacity=".3"/>
           <ellipse cx="100" cy="322" rx="36" ry="18" fill="var(--fog)" id="fog-body" opacity=".9"/>
@@ -601,6 +601,12 @@ function applyFogState(done) {
   const lock = document.getElementById('fog-lock');
   if (lock) lock.setAttribute('opacity', statusLifted ? '0' : '1');
   ISLANDS[5].status = statusLifted ? 'open' : 'locked';
+  const islG5 = document.getElementById('isl-g-5');
+  if (islG5) {
+    islG5.style.pointerEvents = statusLifted ? '' : 'none';
+    islG5.setAttribute('tabindex', statusLifted ? '0' : '-1');
+    islG5.setAttribute('aria-label', statusLifted ? 'Kildebruk' : 'Kildebruk – låst');
+  }
   document.getElementById('ms-fog-txt').textContent = statusLifted
     ? 'Kildebruk er nå tilgjengelig!'
     : `Fullfør ${CONFIG.fogUnlockAt} kapitler for å åpne Kildebruk (${done}/${CONFIG.fogUnlockAt})`;
