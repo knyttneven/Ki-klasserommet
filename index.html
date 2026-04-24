@@ -419,6 +419,8 @@ let tapCount = 0, tapTimer = null;
 let pendingSavePrompt = null, pendingSaveId = null;
 let adminUnlocked = false;
 const adminMode = new URLSearchParams(location.search).get('admin') === '1';
+let islandUnlocked = [];
+const ISLAND_UNLOCK_THRESHOLD = 2;
 
 function saveState() { localStorage.setItem('ki-state', JSON.stringify(state)); }
 
@@ -442,17 +444,53 @@ function init() {
     t.textContent = `Låst – fullfør ${CONFIG.fogUnlockAt} øyer for å åpne Kildebruk`;
     lockEl.insertBefore(t, lockEl.firstChild);
   }
+
+  // Padlocks for islands 1–4 (island 0 always unlocked, island 5 has fog-lock)
+  const LOCK_POS = [null, {cx:278,cy:158}, {cx:404,cy:154}, {cx:412,cy:264}, {cx:258,cy:300}];
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  LOCK_POS.forEach((pos, i) => {
+    if (!pos) return;
+    const islGrp = document.getElementById('isl-g-' + i);
+    if (!islGrp) return;
+    const g = document.createElementNS(SVG_NS, 'g');
+    g.setAttribute('id', 'isl-lock-' + i);
+    g.setAttribute('opacity', '0');
+    const circle = document.createElementNS(SVG_NS, 'circle');
+    circle.setAttribute('cx', String(pos.cx));
+    circle.setAttribute('cy', String(pos.cy));
+    circle.setAttribute('r', '9');
+    circle.setAttribute('fill', '#3a4c5c');
+    circle.setAttribute('stroke', '#f0ece0');
+    circle.setAttribute('stroke-width', '1.5');
+    const rect = document.createElementNS(SVG_NS, 'rect');
+    rect.setAttribute('x', String(pos.cx - 5));
+    rect.setAttribute('y', String(pos.cy - 1));
+    rect.setAttribute('width', '10');
+    rect.setAttribute('height', '7');
+    rect.setAttribute('rx', '1.5');
+    rect.setAttribute('fill', '#e8eff5');
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('d', 'M' + (pos.cx - 2) + ' ' + (pos.cy - 1) + ' v-2.5 a2.5 2.5 0 0 1 5 0 v2.5');
+    path.setAttribute('stroke', '#e8eff5');
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('fill', 'none');
+    g.appendChild(circle);
+    g.appendChild(rect);
+    g.appendChild(path);
+    islGrp.appendChild(g);
+  });
 }
 
 // ── ISLAND SELECTION ──
 function selectIsland(i) {
   activeIsland = i;
   const isl = ISLANDS[i];
+  const locked = i === 5 ? isl.status === 'locked' : !(islandUnlocked[i] ?? true);
   document.getElementById('ms-title').textContent = isl.name;
   document.getElementById('ms-sub').textContent = isl.desc;
   const btn = document.getElementById('ms-open-btn');
-  btn.disabled = (isl.status === 'locked');
-  btn.textContent = isl.status === 'locked' ? 'Låst – ikke tilgjengelig' : 'Åpne ' + isl.name;
+  btn.disabled = locked;
+  btn.textContent = locked ? 'Låst – ikke tilgjengelig' : 'Åpne ' + isl.name;
   document.querySelectorAll('.isl').forEach((el, j) => {
     el.style.opacity = j === i ? '1' : '0.65';
   });
@@ -460,7 +498,8 @@ function selectIsland(i) {
 
 // ── ZOOM VIEW ──
 function openZoom() {
-  if (activeIsland === null || ISLANDS[activeIsland].status === 'locked') return;
+  const islLocked = activeIsland === 5 ? ISLANDS[5].status === 'locked' : !(islandUnlocked[activeIsland] ?? true);
+  if (activeIsland === null || islLocked) return;
   const isl = ISLANDS[activeIsland];
   document.getElementById('zv-name').textContent = isl.name;
   document.getElementById('zv-sub-zoom').textContent = isl.desc.substring(0, 60) + '…';
@@ -645,68 +684,69 @@ function recalcProgress() {
   document.getElementById('ms-fog-fill').style.width = fogPct + '%';
   applyFogState(done);
 
+  islandUnlocked = ISLANDS.map((isl, i) => {
+    if (adminMode) return true;
+    if (i === 0) return true;
+    if (i === 5) return ISLANDS[5].status === 'open';
+    const prev = ISLANDS[i - 1];
+    const prevDone = prev.cards.filter(c => c.type === 'simple' && state.completed[c.id]).length;
+    return prevDone >= ISLAND_UNLOCK_THRESHOLD;
+  });
+
   updateMapVisuals();
   if (newUnlock && typeof window.onIslandUnlocked === 'function') window.onIslandUnlocked();
 }
 
 // Colour palettes per island for done/active/open states
+const LOCKED_COL = { body:'#8090a0', hi:'#9aaabb' };
 const ISL_COLOURS = [
   // island 0: green
-  { done: { body:'#5a8838', hi:'#7ab050' }, active: { body:'#6888a8', hi:'#88aac8' }, open: { body:'#7a9850', hi:'#9ab870' } },
+  { done: { body:'#5a8838', hi:'#7ab050' }, active: { body:'#6888a8', hi:'#88aac8' }, open: { body:'#7a9850', hi:'#9ab870' }, locked: LOCKED_COL },
   // island 1: blue
-  { done: { body:'#5a8838', hi:'#7ab050' }, active: { body:'#6888a8', hi:'#88aac8' }, open: { body:'#6888a8', hi:'#88aac8' } },
+  { done: { body:'#5a8838', hi:'#7ab050' }, active: { body:'#6888a8', hi:'#88aac8' }, open: { body:'#6888a8', hi:'#88aac8' }, locked: LOCKED_COL },
   // island 2: purple
-  { done: { body:'#5a8838', hi:'#7ab050' }, active: { body:'#8878b0', hi:'#a898c8' }, open: { body:'#8878b0', hi:'#a898c8' } },
+  { done: { body:'#5a8838', hi:'#7ab050' }, active: { body:'#8878b0', hi:'#a898c8' }, open: { body:'#8878b0', hi:'#a898c8' }, locked: LOCKED_COL },
   // island 3: amber
-  { done: { body:'#5a8838', hi:'#7ab050' }, active: { body:'#b88030', hi:'#d0a050' }, open: { body:'#b88030', hi:'#d0a050' } },
+  { done: { body:'#5a8838', hi:'#7ab050' }, active: { body:'#b88030', hi:'#d0a050' }, open: { body:'#b88030', hi:'#d0a050' }, locked: LOCKED_COL },
   // island 4: coral
-  { done: { body:'#5a8838', hi:'#7ab050' }, active: { body:'#b86040', hi:'#d08060' }, open: { body:'#b86040', hi:'#d08060' } }
+  { done: { body:'#5a8838', hi:'#7ab050' }, active: { body:'#b86040', hi:'#d08060' }, open: { body:'#b86040', hi:'#d08060' }, locked: LOCKED_COL }
 ];
 
 function updateMapVisuals() {
-  // Find the first non-done non-locked island (the 'active' one)
-  const activeId = ISLANDS.findIndex((isl, i) => i < 5 && !state.islandsDone[isl.id]);
+  // Find the first unlocked non-done island (the 'active' one)
+  const activeId = ISLANDS.findIndex((isl, i) => i < 5 && (islandUnlocked[i] ?? true) && !state.islandsDone[isl.id]);
 
   ISLANDS.forEach((isl, i) => {
     if (i === 5) return; // Kildebruk handled by fog logic separately
     const isDone = state.islandsDone[isl.id];
+    const unlocked = islandUnlocked[i] ?? true;
     const isActive = (i === activeId);
     const col = ISL_COLOURS[i];
 
-    const body = document.getElementById('isl-body-' + i);
-    const hi   = document.getElementById('isl-hi-' + i);
-    const done = document.getElementById('isl-done-' + i);
-    const here = document.getElementById('isl-here-' + i);
-    const pulse = document.getElementById('isl-pulse-' + i);
+    const body    = document.getElementById('isl-body-' + i);
+    const hi      = document.getElementById('isl-hi-' + i);
+    const doneEl  = document.getElementById('isl-done-' + i);
+    const here    = document.getElementById('isl-here-' + i);
+    const pulse   = document.getElementById('isl-pulse-' + i);
     const dotPulse = document.getElementById('isl-dot-pulse-' + i);
+    const lockEl  = document.getElementById('isl-lock-' + i);
+    const grp     = document.getElementById('isl-g-' + i);
 
-    const state_key = isDone ? 'done' : isActive ? 'active' : 'open';
+    const state_key = !unlocked ? 'locked' : isDone ? 'done' : isActive ? 'active' : 'open';
 
     if (body) body.setAttribute('fill', col[state_key].body);
     if (hi)   hi.setAttribute('fill',   col[state_key].hi);
 
-    // Done badge
-    if (done) done.setAttribute('opacity', isDone ? '1' : '0');
+    if (doneEl) doneEl.setAttribute('opacity', (isDone && unlocked) ? '1' : '0');
+    if (here)   here.setAttribute('opacity', (unlocked && !isDone && isActive) ? '1' : '0');
+    if (pulse)     pulse.style.display    = (unlocked && !isDone && isActive) ? '' : 'none';
+    if (dotPulse)  dotPulse.style.display = (unlocked && !isDone && isActive) ? '' : 'none';
+    if (lockEl)    lockEl.setAttribute('opacity', unlocked ? '0' : '1');
 
-    // "du er her" text
-    if (here) here.setAttribute('opacity', (!isDone && isActive) ? '1' : '0');
-
-    // Pulse ring (only on active, non-done island)
-    if (pulse) {
-      if (!isDone && isActive) {
-        pulse.style.display = '';
-      } else {
-        pulse.style.display = 'none';
-      }
-    }
-    if (dotPulse) {
-      dotPulse.style.display = (!isDone && isActive) ? '' : 'none';
-    }
-
-    // Update aria-label
-    const grp = document.getElementById('isl-g-' + i);
     if (grp) {
-      const statusTxt = isDone ? 'fullført' : isActive ? 'aktiv – du er her' : 'tilgjengelig';
+      grp.style.pointerEvents = unlocked ? '' : 'none';
+      grp.setAttribute('tabindex', unlocked ? '0' : '-1');
+      const statusTxt = !unlocked ? 'låst' : isDone ? 'fullført' : isActive ? 'aktiv – du er her' : 'tilgjengelig';
       grp.setAttribute('aria-label', isl.name + ' – ' + statusTxt);
     }
   });
