@@ -421,8 +421,6 @@ let tapCount = 0, tapTimer = null;
 let pendingSavePrompt = null, pendingSaveId = null;
 let adminUnlocked = false;
 const adminMode = new URLSearchParams(location.search).get('admin') === '1';
-let islandUnlocked = [];
-const ISLAND_UNLOCK_THRESHOLD = 2;
 
 function saveState() { localStorage.setItem('ki-state', JSON.stringify(state)); }
 
@@ -488,7 +486,7 @@ function init() {
 function selectIsland(i) {
   activeIsland = i;
   const isl = ISLANDS[i];
-  const locked = i === 5 ? isl.status === 'locked' : !(islandUnlocked[i] ?? false);
+  const locked = !isIslandUnlocked(i);
   document.getElementById('ms-title').textContent = isl.name;
   document.getElementById('ms-sub').textContent = isl.desc;
   const btn = document.getElementById('ms-open-btn');
@@ -501,7 +499,7 @@ function selectIsland(i) {
 
 // ── ZOOM VIEW ──
 function openZoom() {
-  const islLocked = activeIsland === 5 ? ISLANDS[5].status === 'locked' : !(islandUnlocked[activeIsland] ?? false);
+  const islLocked = !isIslandUnlocked(activeIsland);
   if (activeIsland === null || islLocked) return;
   const isl = ISLANDS[activeIsland];
   document.getElementById('zv-name').textContent = isl.name;
@@ -643,13 +641,6 @@ function applyFogState(done) {
   const lock = document.getElementById('fog-lock');
   if (lock) lock.setAttribute('opacity', statusLifted ? '0' : '1');
   ISLANDS[5].status = statusLifted ? 'open' : 'locked';
-  const islG5 = document.getElementById('isl-g-5');
-  if (islG5) {
-    islG5.style.pointerEvents = statusLifted ? '' : 'none';
-    islG5.setAttribute('tabindex', statusLifted ? '0' : '-1');
-    islG5.classList.toggle('locked', !statusLifted);
-    islG5.setAttribute('aria-label', statusLifted ? 'Kildebruk' : 'Kildebruk – låst');
-  }
   document.getElementById('ms-fog-txt').textContent = statusLifted
     ? 'Kildebruk er nå tilgjengelig!'
     : `Fullfør ${CONFIG.fogUnlockAt} kapitler for å åpne Kildebruk (${done}/${CONFIG.fogUnlockAt})`;
@@ -688,13 +679,6 @@ function recalcProgress() {
   document.getElementById('ms-fog-fill').style.width = fogPct + '%';
   applyFogState(done);
 
-  islandUnlocked = ISLANDS.map((isl, i) => {
-    if (adminMode) return true;
-    if (i === 0) return true;
-    if (i === 5) return ISLANDS[5].status === 'open';
-    return completedPromptsInIsland(ISLANDS[i - 1].id) >= ISLAND_UNLOCK_THRESHOLD;
-  });
-
   updateMapVisuals();
   if (newUnlock && typeof window.onIslandUnlocked === 'function') window.onIslandUnlocked();
 }
@@ -714,45 +698,52 @@ const ISL_COLOURS = [
   { done: { body:'#5a8838', hi:'#7ab050' }, active: { body:'#b86040', hi:'#d08060' }, open: { body:'#b86040', hi:'#d08060' }, locked: LOCKED_COL }
 ];
 
+// ── SINGLE SOURCE OF TRUTH FOR ISLAND LOCKING ──
+function isIslandUnlocked(index) {
+  if (adminMode) return true;
+  if (index === 0) return true;
+  if (index === 5) return ISLANDS[5].status === 'open'; // Kildebruk: fog-completion rule (set by applyFogState)
+  return completedPromptsInIsland(ISLANDS[index - 1].id) >= 2;
+}
+
 function updateMapVisuals() {
-  // Find the first unlocked non-done island (the 'active' one)
-  const activeId = ISLANDS.findIndex((isl, i) => i < 5 && (islandUnlocked[i] ?? false) && !state.islandsDone[isl.id]);
+  const activeId = ISLANDS.findIndex((isl, i) => i < 5 && isIslandUnlocked(i) && !state.islandsDone[isl.id]);
 
   ISLANDS.forEach((isl, i) => {
-    if (i === 5) return; // Kildebruk handled by fog logic separately
+    const unlocked = isIslandUnlocked(i);
     const isDone = state.islandsDone[isl.id];
-    const unlocked = islandUnlocked[i] ?? false;
     const isActive = (i === activeId);
-    const col = ISL_COLOURS[i];
+    const grp = document.getElementById('isl-g-' + i);
 
-    const body    = document.getElementById('isl-body-' + i);
-    const hi      = document.getElementById('isl-hi-' + i);
-    const doneEl  = document.getElementById('isl-done-' + i);
-    const here    = document.getElementById('isl-here-' + i);
-    const pulse   = document.getElementById('isl-pulse-' + i);
+    if (grp) {
+      grp.style.pointerEvents = unlocked ? '' : 'none';
+      grp.setAttribute('tabindex', unlocked ? '0' : '-1');
+      grp.classList.toggle('locked', !unlocked);
+      const statusTxt = !unlocked ? 'låst' : isDone ? 'fullført' : isActive ? 'aktiv – du er her' : 'tilgjengelig';
+      grp.setAttribute('aria-label', isl.name + ' – ' + statusTxt);
+    }
+
+    if (i === 5) return; // Kildebruk: fog visuals handled by applyFogState
+
+    const col = ISL_COLOURS[i];
+    const body     = document.getElementById('isl-body-' + i);
+    const hi       = document.getElementById('isl-hi-' + i);
+    const doneEl   = document.getElementById('isl-done-' + i);
+    const here     = document.getElementById('isl-here-' + i);
+    const pulse    = document.getElementById('isl-pulse-' + i);
     const dotPulse = document.getElementById('isl-dot-pulse-' + i);
-    const lockEl  = document.getElementById('isl-lock-' + i);
-    const grp     = document.getElementById('isl-g-' + i);
+    const lockEl   = document.getElementById('isl-lock-' + i);
 
     const state_key = !unlocked ? 'locked' : isDone ? 'done' : isActive ? 'active' : 'open';
 
     if (body) body.setAttribute('fill', col[state_key].body);
     if (hi)   hi.setAttribute('fill',   col[state_key].hi);
 
-    if (doneEl) doneEl.setAttribute('opacity', (isDone && unlocked) ? '1' : '0');
-    if (here)   here.setAttribute('opacity', (unlocked && !isDone && isActive) ? '1' : '0');
+    if (doneEl)    doneEl.setAttribute('opacity', (isDone && unlocked) ? '1' : '0');
+    if (here)      here.setAttribute('opacity', (unlocked && !isDone && isActive) ? '1' : '0');
     if (pulse)     pulse.style.display    = (unlocked && !isDone && isActive) ? '' : 'none';
     if (dotPulse)  dotPulse.style.display = (unlocked && !isDone && isActive) ? '' : 'none';
     if (lockEl)    lockEl.setAttribute('opacity', unlocked ? '0' : '1');
-
-    if (grp) {
-      const isLocked = i === 0 ? false : !unlocked;
-      grp.style.pointerEvents = isLocked ? 'none' : '';
-      grp.setAttribute('tabindex', isLocked ? '-1' : '0');
-      grp.classList.toggle('locked', isLocked);
-      const statusTxt = isLocked ? 'låst' : isDone ? 'fullført' : isActive ? 'aktiv – du er her' : 'tilgjengelig';
-      grp.setAttribute('aria-label', isl.name + ' – ' + statusTxt);
-    }
   });
 }
 
