@@ -12,6 +12,6 @@ export const CONFIG = {
   supabase: {
     enableRead: false,       // D1.2: les brukerdata fra Supabase
     enableWrite: false,      // D1.3: skriv brukerdata til Supabase
-    enableProgression: false // D1.4: progresjon og tilstand via Supabase
+    enableProgression: true  // D1.4: progresjon og tilstand via Supabase
   }
 };
